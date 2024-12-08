@@ -1,6 +1,8 @@
 # Telegram Channel Praser
 
-> Yes, 'praser' is a typo of 'parser' - it's a feature, not a bug
+<div align="center">
+  <img src="./assets/banner.png" alt="banner">
+</div>
 
 将 *Telegram* 的频道内的消息转换为 图片 + *Markdown* 文字的内容，并存储到本地数据库。
 内置  *HTTP* 服务器，可通过 *RESTful API* 灵活调用。
