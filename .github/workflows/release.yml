@@ -55,7 +55,8 @@ jobs:
                   retry_wait_seconds: 5
                   command: |
                       cd server/ || { echo "Directory not found"; exit 1; }
-                      bun install
+                      bun install --no-install-postinstall || { echo "Failed to install dependencies"; exit 1; }
+                      
 
             - name: Compile Code
               run: |
