@@ -11,7 +11,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2.0.1
-        
+
       - name: Extract version number
         id: get_version
         run: echo "::set-output name=VERSION::$(jq -r .version < package.json)"
@@ -22,11 +22,14 @@ jobs:
       - name: Compile Code
         run: |
           mkdir out
-          bun build --compile --target=bun-linux-x64 ./index.ts --outfile out/telegrampraser-linux-x64
-          bun build --compile --target=bun-linux-arm64 ./index.ts --outfile out/telegrampraser-linux-arm64
-          bun build --compile --target=bun-windows-x64 ./index.ts --outfile out/telegrampraser-windows-x64
-          bun build --compile --target=bun-darwin-x64 ./index.ts --outfile out/telegrampraser-darwin-x64
-          bun build --compile --target=bun-darwin-arm64 ./index.ts --outfile out/telegrampraser-darwin-arm64
-          ls ./out
+          bun build --compile --target=bun-linux-x64 ./index.ts --outfile out/telegrampraser-linux-x64_v${{ steps.get_version.outputs.VERSION }}
+          bun build --compile --target=bun-linux-arm64 ./index.ts --outfile out/telegrampraser-linux-arm64_v${{ steps.get_version.outputs.VERSION }}
+          bun build --compile --target=bun-windows-x64 ./index.ts --outfile out/telegrampraser-windows-x64_v${{ steps.get_version.outputs.VERSION }}
+          bun build --compile --target=bun-darwin-x64 ./index.ts --outfile out/telegrampraser-darwin-x64_v${{ steps.get_version.outputs.VERSION }}
+          bun build --compile --target=bun-darwin-arm64 ./index.ts --outfile out/telegrampraser-darwin-arm64_v${{ steps.get_version.outputs.VERSION }}
 
-        
+      - name: Create GitHub Release
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: "out/*"
+          token: ${{ secrets.YOUR_GITHUB_TOKEN }}
