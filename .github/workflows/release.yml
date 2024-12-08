@@ -24,9 +24,9 @@ jobs:
           mkdir out
           bun build --compile --target=bun-linux-x64 ./index.ts --outfile out/telegrampraser-linux-x64
           bun build --compile --target=bun-linux-arm64 ./index.ts --outfile out/telegrampraser-linux-arm64
-          bun build --compile --target=bun-windows-x64 ./path/to/my/app.ts --outfile out/telegrampraser-windows-x64
-          bun build --compile --target=bun-darwin-x64 ./path/to/my/app.ts --outfile out/telegrampraser-darwin-x64
-          bun build --compile --target=bun-darwin-arm64 ./path/to/my/app.ts --outfile out/telegrampraser-darwin-arm64
+          bun build --compile --target=bun-windows-x64 ./index.ts --outfile out/telegrampraser-windows-x64
+          bun build --compile --target=bun-darwin-x64 ./index.ts --outfile out/telegrampraser-darwin-x64
+          bun build --compile --target=bun-darwin-arm64 ./index.ts --outfile out/telegrampraser-darwin-arm64
           ls ./out
 
         
