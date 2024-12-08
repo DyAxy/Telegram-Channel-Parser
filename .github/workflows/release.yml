@@ -17,31 +17,47 @@ jobs:
             - uses: actions/checkout@v4
             - uses: oven-sh/setup-bun@v2.0.1
             - name: Install UPX
-              uses: crazy-max/ghaction-upx@v3
+              uses: nick-fields/retry@v2
               with:
-                  install-only: true
+                  timeout_minutes: 1
+                  max_attempts: 3
+                  command: |
+                      UPX_VERSION=$(curl -s https://api.github.com/repos/upx/upx/releases/latest | jq -r .tag_name | sed 's/^v//')
+                      echo "Latest UPX version: ${UPX_VERSION}"
+
+                      wget "https://github.com/upx/upx/releases/download/v${UPX_VERSION}/upx-${UPX_VERSION}-amd64_linux.tar.xz"
+                      tar -xf "upx-${UPX_VERSION}-amd64_linux.tar.xz"
+                      sudo mv "upx-${UPX_VERSION}-amd64_linux/upx" /usr/local/bin/
+                      rm -rf "upx-${UPX_VERSION}-amd64_linux"*
+
+                      upx --version
+
             - name: Dependencies version
               run: |
                   echo "=== System Info ==="
                   uname -a && cat /etc/os-release
-                  lscpu && cat /proc/meminfo | head -n 5
-                  nproc && cat /proc/cpuinfo
 
                   echo -e "\n=== Dependencies Version ==="
-                  upx --version
                   bun --version
 
             - name: Extract version number
               id: get_version
-              run: echo "::set-output name=VERSION::$(jq -r .version < package.json)"
+              run: |
+                  VERSION=$(jq -r .version < package.json)
+                  echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
 
             - name: Install Dependencies
-              run: |
-                  cd server/ || { echo "Directory not found"; exit 1; }
-                  bun install
+              uses: nick-fields/retry@v2
+              with:
+                  timeout_minutes: 1
+                  max_attempts: 3
+                  command: |
+                      cd server/ || { echo "Directory not found"; exit 1; }
+                      bun install
 
             - name: Compile Code
               run: |
+                  cd server/ || { echo "Directory not found"; exit 1; }
                   mkdir out
                   bun build --compile --target=bun-${{ matrix.version }} ./index.ts --outfile out/telegram-parser-${{ matrix.version }}_v${{ steps.get_version.outputs.VERSION }}
                   cp ${GITHUB_WORKSPACE}/README.md ./out/README.md
@@ -53,11 +69,12 @@ jobs:
 
             - name: Upx Compress
               run: |
-                  cd out
+                  cd server/out/ || { echo "Directory not found"; exit 1; }
                   upx --best --lzma --ultra-brute telegram-parser-${{ matrix.version }}_v${{ steps.get_version.outputs.VERSION }}
 
             - name: Package Output
               run: |
+                  cd server/out/ || { echo "Directory not found"; exit 1; }
                   if [[ "${{ matrix.version }}" == linux* ]]; then
                     tar -cJf ../telegram-parser-${{ matrix.version }}_v${{ steps.get_version.outputs.VERSION }}.tar.xz *
                   else
