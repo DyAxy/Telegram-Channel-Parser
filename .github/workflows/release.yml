@@ -23,15 +23,15 @@ jobs:
                   max_attempts: 3
                   retry_wait_seconds: 5
                   command: |
-                        UPX_VERSION=$(curl -s https://api.github.com/repos/upx/upx/releases/latest | jq -r .tag_name | sed 's/^v//')
-                        echo "Latest UPX version: ${UPX_VERSION}"
+                      UPX_VERSION=$(curl -s https://api.github.com/repos/upx/upx/releases/latest | jq -r .tag_name | sed 's/^v//')
+                      echo "Latest UPX version: ${UPX_VERSION}"
 
-                        wget "https://github.com/upx/upx/releases/download/v${UPX_VERSION}/upx-${UPX_VERSION}-amd64_linux.tar.xz"
-                        tar -xf "upx-${UPX_VERSION}-amd64_linux.tar.xz"
-                        sudo mv "upx-${UPX_VERSION}-amd64_linux/upx" /usr/local/bin/
-                        rm -rf "upx-${UPX_VERSION}-amd64_linux"*
+                      wget "https://github.com/upx/upx/releases/download/v${UPX_VERSION}/upx-${UPX_VERSION}-amd64_linux.tar.xz"
+                      tar -xf "upx-${UPX_VERSION}-amd64_linux.tar.xz"
+                      sudo mv "upx-${UPX_VERSION}-amd64_linux/upx" /usr/local/bin/
+                      rm -rf "upx-${UPX_VERSION}-amd64_linux"*
 
-                        upx --version
+                      upx --version
 
             - name: Dependencies version
               run: |
@@ -57,7 +57,6 @@ jobs:
                       cd server/ || { echo "Directory not found"; exit 1; }
                       bun install --no-install-postinstall || { echo "Failed to install dependencies"; exit 1; }
 
-
             - name: Compile Code
               run: |
                   cd server/ || { echo "Directory not found"; exit 1; }
@@ -74,7 +73,13 @@ jobs:
             - name: Upx Compress
               run: |
                   cd server/out/ || { echo "Directory not found"; exit 1; }
-                  upx --best --lzma --ultra-brute telegram-parser-${{ matrix.version }}_v${{ steps.get_version.outputs.VERSION }}
+                  if [[ "${{ matrix.version }}" == "windows-x64" ]]; then
+                    upx --best --lzma --ultra-brute telegram-parser-${{ matrix.version }}_v${{ steps.get_version.outputs.VERSION }}.exe
+                  elif [[ "${{ matrix.version }}" != darwin* ]]; then
+                    upx --best --lzma --ultra-brute telegram-parser-${{ matrix.version }}_v${{ steps.get_version.outputs.VERSION }}
+                  else
+                    echo "Skipping UPX compression for macOS build"
+                  fi
 
             - name: Package Output
               run: |
