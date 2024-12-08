@@ -56,12 +56,13 @@ jobs:
                   command: |
                       cd server/ || { echo "Directory not found"; exit 1; }
                       bun install --no-install-postinstall || { echo "Failed to install dependencies"; exit 1; }
-                      
+
 
             - name: Compile Code
               run: |
                   cd server/ || { echo "Directory not found"; exit 1; }
                   mkdir out
+                  mkdir logs
                   bun build --compile --target=bun-${{ matrix.version }} ./index.ts --outfile out/telegram-parser-${{ matrix.version }}_v${{ steps.get_version.outputs.VERSION }}
                   cp ${GITHUB_WORKSPACE}/README.md ./out/README.md
                   cp ${GITHUB_WORKSPACE}/LICENSE ./out/LICENSE
