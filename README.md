@@ -3,7 +3,7 @@
 内置  *HTTP* 服务器，可通过 *RESTful API* 灵活调用。
 基于 *Telegram MTProto* 协议，灵活导入、监听频道信息。
 
-**Telegram讨论组：**https://t.me/dyaogroup
+**Telegram讨论组：** https://t.me/dyaogroup
 
 ## 免责声明
 本项目因使用 Telegram MTProto 协议，所以无法承诺您的 Telegram 账号不会被 Telegram 官方所滥权，所以使用本项目所导致您的 Telegram 账号的损失应由自己承担。
@@ -23,9 +23,9 @@
 
 > **申请 API 属于高危操作**，特别是新注册的 Telegram 账号和使用 VoIP 语音号码注册的账号会加大封号概率，如被封号，请尽快向客服申诉申请解封。同时请勿将 API 泄露给他人。
 
-> 来自 Telegram X 安卓端的 *api_id* 和 *api_hash*，**并不保证可用性**
-API_ID=21724
-API_HASH=3e0cb5efcd52300aec5994fdfc5bdc16
+> 来自 Telegram X 安卓端的 *api_id* 和 *api_hash*，**并不保证可用性**  
+API_ID=21724  
+API_HASH=3e0cb5efcd52300aec5994fdfc5bdc16  
 
 ### 修改 .env.example 为 .env
 修改 .env 中的对应配置
@@ -58,6 +58,6 @@ PORT=3000
 > 你可能需要 screen 、nohup 等来使其后台运行。
 
 ## API 接口
-地址：`/api/list`
-参数：`page`（可选，默认为page=1）
-返回：指定数量的频道消息内容（由新到旧）
+地址：`/api/list`  
+参数：`page`（可选，默认为page=1）  
+返回：指定数量的频道消息内容（由新到旧）  
