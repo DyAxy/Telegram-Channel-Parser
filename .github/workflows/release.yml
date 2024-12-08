@@ -70,24 +70,22 @@ jobs:
                   cp -r logs ./out/logs
                   cp -r scripts ./out/scripts
 
-            - name: Upx Compress
-              run: |
-                  cd server/out/ || { echo "Directory not found"; exit 1; }
-                  if [[ "${{ matrix.version }}" == "windows-x64" ]]; then
-                    upx --best --lzma --ultra-brute telegram-parser-${{ matrix.version }}_v${{ steps.get_version.outputs.VERSION }}.exe
-                  elif [[ "${{ matrix.version }}" != darwin* ]]; then
-                    upx --best --lzma --ultra-brute telegram-parser-${{ matrix.version }}_v${{ steps.get_version.outputs.VERSION }}
-                  else
-                    echo "Skipping UPX compression for macOS build"
-                  fi
+            # - name: Upx Compress
+            #   run: |
+            #       cd server/out/ || { echo "Directory not found"; exit 1; }
+            #       if [[ "${{ matrix.version }}" != darwin* ]]; then
+            #         upx --best telegram-parser-${{ matrix.version }}_v${{ steps.get_version.outputs.VERSION }}
+            #       else
+            #         echo "Skipping UPX compression for macOS & Windows build"
+            #       fi
 
             - name: Package Output
               run: |
                   cd server/out/ || { echo "Directory not found"; exit 1; }
                   if [[ "${{ matrix.version }}" == linux* ]]; then
-                    tar -cJf ../telegram-parser-${{ matrix.version }}_v${{ steps.get_version.outputs.VERSION }}.tar.xz *
+                    tar -cJf ${GITHUB_WORKSPACE}/telegram-parser-${{ matrix.version }}_v${{ steps.get_version.outputs.VERSION }}.tar.xz *
                   else
-                    zip -r ../telegram-parser-${{ matrix.version }}_v${{ steps.get_version.outputs.VERSION }}.zip *
+                    zip -r ${GITHUB_WORKSPACE}/telegram-parser-${{ matrix.version }}_v${{ steps.get_version.outputs.VERSION }}.zip *
                   fi
 
             - name: Create GitHub Release
