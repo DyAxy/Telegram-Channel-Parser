@@ -1,4 +1,7 @@
 # Telegram Channel Praser
+
+> Yes, 'praser' is a typo of 'parser' - it's a feature, not a bug
+
 将 *Telegram* 的频道内的消息转换为 图片 + *Markdown* 文字的内容，并存储到本地数据库。
 内置  *HTTP* 服务器，可通过 *RESTful API* 灵活调用。
 基于 *Telegram MTProto* 协议，灵活导入、监听频道信息。
@@ -16,6 +19,7 @@
 - 基于 *Hono* 的 *RESTful API*，方便拉取消息
 
 ## 使用方法
+
 ### Telegram Developer API
 1. 在 [这里](https://my.telegram.org/ "这里") 登录你的 Telegram 账号
 2. 点击“API development tools”，填入 *App title* 和 *Short name* 保存即可。
@@ -49,15 +53,59 @@ PORT=3000
 ```
 
 ## 启动程序
+
 1. 你需要使用 [Bun](https://bun.sh/ "Bun")（一款高性能的 Javascript 运行环境）来运行本程序。
+
+一键安装 Bun: `curl -fsSL https://bun.sh/install | bash`
+
 2. 使用 `bun install` 来安装所有依赖。
 3. 使用 `bun run dev` 启动服务端。
 4. 根据提示输入手机号、Telegram收到的验证码、二次密码等。
 5. 第一次使用会创建数据库并拉取频道内容，后续每次启动只会拉取最新内容。
 
-> 你可能需要 screen 、nohup 等来使其后台运行。
+> 只需要第一次获取 Session 即可，后续可直接启动 services。
+
+## 持久化服务
+
+本项目使用 pm2 进行服务管理，确认 Session 登录成功后一键启动： `pm2 start ecosystem.config.js`
+
+安装依赖：`bun i -g pm2`
 
 ## API 接口
-地址：`/api/list`  
+
+### 健康检查
+
+地址：`/api/v1/status`  
+参数：无，推荐追加随机参数以绕过浏览器缓存
+返回：200, OK
+
+### 列出消息
+
+地址：`/api/v1/list`  
 参数：`page`（可选，默认为page=1）  
-返回：指定数量的频道消息内容（由新到旧）  
+返回：指定数量的频道消息内容（由新到旧）
+
+... 待完善，可参见 ./utils/routers.ts 定义
+
+## 删除本地缓存
+
+如果要更换 IP 或者修改监听频道目标 / 账号，请务必执行以下操作：
+
+> 注意：如果你修改了配置文件中的 `MESSAGE_SQLITE_FILE` 或 `SESSION_FILE` 路径，请相应地修改脚本，在此不做赘述。
+
+```bash
+bash ./clear-cache.sh [选项]
+
+选项:
+  -M, --message    删除消息缓存 (如果需要修改监听频道)
+  -S, --session    删除会话缓存 (如果更换了 IP / 账号)
+
+示例:
+  ./clear-cache.sh -M          # 只删除消息缓存
+  ./clear-cache.sh -S          # 只删除会话缓存
+  ./clear-cache.sh -M -S       # 同时删除消息和会话缓存
+```
+
+## 开源协议
+
+本项目基于 [*GPL-3.0*](./LICENSE) 开源协议，您可以在遵守协议的前提下自由使用、修改、分发本项目。
