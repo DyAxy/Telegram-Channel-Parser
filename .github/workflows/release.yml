@@ -6,8 +6,18 @@ on:
       - master
 
 jobs:
-  release-build:
+  build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        version:
+          [
+            "linux-x64",
+            "linux-arm64",
+            "windows-x64",
+            "darwin-x64",
+            "darwin-arm64",
+          ]
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2.0.1
@@ -22,19 +32,26 @@ jobs:
       - name: Compile Code
         run: |
           mkdir out
-          bun build --compile --target=bun-linux-x64 ./index.ts --outfile out/telegrampraser-linux-x64_v${{ steps.get_version.outputs.VERSION }}
-          bun build --compile --target=bun-linux-arm64 ./index.ts --outfile out/telegrampraser-linux-arm64_v${{ steps.get_version.outputs.VERSION }}
-          bun build --compile --target=bun-windows-x64 ./index.ts --outfile out/telegrampraser-windows-x64_v${{ steps.get_version.outputs.VERSION }}
-          bun build --compile --target=bun-darwin-x64 ./index.ts --outfile out/telegrampraser-darwin-x64_v${{ steps.get_version.outputs.VERSION }}
-          bun build --compile --target=bun-darwin-arm64 ./index.ts --outfile out/telegrampraser-darwin-arm64_v${{ steps.get_version.outputs.VERSION }}
+          bun build --compile --target=bun-${{ matrix.version }} ./index.ts --outfile out/telegrampraser-${{ matrix.version }}_v${{ steps.get_version.outputs.VERSION }}
+          cp ${GITHUB_WORKSPACE}/README.md ./out/README.md
+          cp ${GITHUB_WORKSPACE}/LICENSE ./out/LICENSE
+          cp .env.example ./out/.env.example
+          cp -r ${GITHUB_WORKSPACE}/database ./out/database
+
+      - name: Zip Output Directory
+        run: |
+          cd out
+          zip -r ../telegrampraser-${{ matrix.version }}_v${{ steps.get_version.outputs.VERSION }}.zip .
 
       - name: Create GitHub Release
         uses: ncipollo/release-action@v1
         with:
-          artifacts: "out/*"
+          artifacts: "telegrampraser-${{ matrix.version }}_v${{ steps.get_version.outputs.VERSION }}.zip"
           token: ${{ secrets.GITHUB_TOKEN }}
           tag: v${{ steps.get_version.outputs.VERSION }}
           name: Release ${{ steps.get_version.outputs.VERSION }}
           body: "Release of version ${{ steps.get_version.outputs.VERSION }}"
           draft: false
           prerelease: false
+          allowUpdates: true
+          generateReleaseNotes: true
