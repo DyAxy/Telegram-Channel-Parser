@@ -1,0 +1,32 @@
+name: Compile and Release
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  release-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2.0.1
+        
+      - name: Extract version number
+        id: get_version
+        run: echo "::set-output name=VERSION::$(jq -r .version < package.json)"
+
+      - name: Install Dependencies
+        run: bun install
+
+      - name: Compile Code
+        run: |
+          mkdir out
+          bun build --compile --target=bun-linux-x64 ./index.ts --outfile out/telegrampraser-linux-x64
+          bun build --compile --target=bun-linux-arm64 ./index.ts --outfile out/telegrampraser-linux-arm64
+          bun build --compile --target=bun-windows-x64 ./path/to/my/app.ts --outfile out/telegrampraser-windows-x64
+          bun build --compile --target=bun-darwin-x64 ./path/to/my/app.ts --outfile out/telegrampraser-darwin-x64
+          bun build --compile --target=bun-darwin-arm64 ./path/to/my/app.ts --outfile out/telegrampraser-darwin-arm64
+          ls ./out
+
+        
