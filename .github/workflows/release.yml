@@ -19,18 +19,19 @@ jobs:
             - name: Install UPX
               uses: nick-fields/retry@v2
               with:
-                  timeout_minutes: 1
+                  timeout_seconds: 35
                   max_attempts: 3
+                  retry_wait_seconds: 5
                   command: |
-                      UPX_VERSION=$(curl -s https://api.github.com/repos/upx/upx/releases/latest | jq -r .tag_name | sed 's/^v//')
-                      echo "Latest UPX version: ${UPX_VERSION}"
+                        UPX_VERSION=$(curl -s https://api.github.com/repos/upx/upx/releases/latest | jq -r .tag_name | sed 's/^v//')
+                        echo "Latest UPX version: ${UPX_VERSION}"
 
-                      wget "https://github.com/upx/upx/releases/download/v${UPX_VERSION}/upx-${UPX_VERSION}-amd64_linux.tar.xz"
-                      tar -xf "upx-${UPX_VERSION}-amd64_linux.tar.xz"
-                      sudo mv "upx-${UPX_VERSION}-amd64_linux/upx" /usr/local/bin/
-                      rm -rf "upx-${UPX_VERSION}-amd64_linux"*
+                        wget "https://github.com/upx/upx/releases/download/v${UPX_VERSION}/upx-${UPX_VERSION}-amd64_linux.tar.xz"
+                        tar -xf "upx-${UPX_VERSION}-amd64_linux.tar.xz"
+                        sudo mv "upx-${UPX_VERSION}-amd64_linux/upx" /usr/local/bin/
+                        rm -rf "upx-${UPX_VERSION}-amd64_linux"*
 
-                      upx --version
+                        upx --version
 
             - name: Dependencies version
               run: |
@@ -49,8 +50,9 @@ jobs:
             - name: Install Dependencies
               uses: nick-fields/retry@v2
               with:
-                  timeout_minutes: 1
+                  timeout_seconds: 30
                   max_attempts: 3
+                  retry_wait_seconds: 5
                   command: |
                       cd server/ || { echo "Directory not found"; exit 1; }
                       bun install
@@ -63,9 +65,9 @@ jobs:
                   cp ${GITHUB_WORKSPACE}/README.md ./out/README.md
                   cp ${GITHUB_WORKSPACE}/LICENSE ./out/LICENSE
                   cp .env.example ./out/.env.example
-                  cp -r ${GITHUB_WORKSPACE}/database ./out/database
-                  cp -r ${GITHUB_WORKSPACE}/logs ./out/logs
-                  cp -r ${GITHUB_WORKSPACE}/scripts ./out/scripts
+                  cp -r database ./out/database
+                  cp -r logs ./out/logs
+                  cp -r scripts ./out/scripts
 
             - name: Upx Compress
               run: |
