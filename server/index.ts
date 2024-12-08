@@ -2,56 +2,50 @@ import fs from "fs";
 import readline from "readline";
 
 import { Hono } from "hono";
-import { Database } from "bun:sqlite";
 import { Logger, TelegramClient } from "telegram";
 import { StringSession } from "telegram/sessions";
 import { NewMessage } from "telegram/events";
 import { EditedMessage } from "telegram/events/EditedMessage";
 import { DeletedMessage } from "telegram/events/DeletedMessage";
 import { LogLevel } from "telegram/extensions/Logger";
+import type { DataMessages } from './types'
+
+export const logger = new Logger();
 
 import * as SQLite from "./utils/sqlite";
 import * as Telegram from "./utils/telegram";
 import * as Routers from "./utils/routers";
 
-export const logger = new Logger();
+export const database = SQLite.initDatabase();
+
 logger.setLevel(LogLevel.DEBUG);
 
-const initDatabase = () => {
-  logger.info("Initializing database...");
-  const dbPath = "messages.db";
-  const isNew = !fs.existsSync(dbPath);
-  const database = new Database(dbPath);
-  if (isNew) {
-    database.exec(fs.readFileSync("./database/init.sql", "utf8"));
-  } else {
-    // Database migration
-  }
-  logger.info("Database initialized");
-  return database;
-};
-export const database = initDatabase();
-
 const initTelegram = async () => {
-  logger.info("Initializing Telegram...");
+  const sessionPath = Bun.env.SESSION_FILE || "./.session";
+  logger.info(`Initializing Telegram with session file: ${sessionPath}`);
   const getSession = () => {
     try {
-      return fs.readFileSync("./.session", "utf8");
+      return fs.readFileSync(sessionPath, "utf8");
     } catch (err) {
       return "";
     }
   };
+
   // Save the session
   const saveSession = (session: any) => {
     try {
-      fs.writeFileSync("./.session", session);
+      logger.info(`Saving session to ${sessionPath}`);
+      fs.writeFileSync(sessionPath, session);
     } catch (err) {
       logger.error((err as Error).message);
     }
   };
+
   const apiId = parseInt(Bun.env.API_ID!);
   const apiHash = Bun.env.API_HASH!;
   const stringSession = new StringSession(getSession());
+
+  logger.info(`Logging in to Telegram (API ID: ${apiId}), may take a while...`);
 
   const client = new TelegramClient(stringSession, apiId, apiHash, {
     connectionRetries: 5,
@@ -62,6 +56,7 @@ const initTelegram = async () => {
     input: process.stdin,
     output: process.stdout,
   });
+
   await client.start({
     phoneNumber: async () =>
       new Promise((resolve) =>
@@ -77,6 +72,7 @@ const initTelegram = async () => {
       ),
     onError: (e) => logger.error(e.message),
   });
+
   // Initialize the handlers
   logger.info("Initializing Telegram handlers...");
   client.addEventHandler(Telegram.handleNewMessage, new NewMessage({}));
@@ -87,11 +83,12 @@ const initTelegram = async () => {
   logger.info("Telegram logged in");
   return client;
 };
+
 export const client = await initTelegram();
 
 const checkDatabase = async () => {
   logger.info("Checking database...");
-  const savedMessages = SQLite.getMessages() as DataMessages[];
+  const savedMessages = await SQLite.getMessages() as DataMessages[];
   const lastMessage = await Telegram.getLastMessage();
   const startId =
     savedMessages.length === 0
@@ -137,6 +134,8 @@ for (const router of Routers.routers) {
 // Start the HTTP server
 logger.info("Starting the server...");
 Bun.serve({
+  hostname: Bun.env.HOST!,
   port: Bun.env.PORT!,
   fetch: app.fetch,
 });
+logger.info(`Server started at ${Bun.env.HOST}:${Bun.env.PORT}`);

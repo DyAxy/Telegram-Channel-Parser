@@ -1,6 +1,9 @@
 import type { Context } from "hono";
 import { logger as HonoLogger } from "hono/logger";
 import { HTTPException } from "hono/http-exception";
+import { readFileSync } from "fs";
+import { join } from "path";
+import type { Router } from '../types'
 
 import { logger } from "..";
 import * as SQLite from "./sqlite";
@@ -10,6 +13,7 @@ export const loggerHandler = HonoLogger(
     logger.info(message + " " + rest.join(" "));
   }
 );
+
 export const errorHandler = (err: Error, c: Context) => {
   logger.error(err.message);
   if (err instanceof HTTPException) {
@@ -18,14 +22,41 @@ export const errorHandler = (err: Error, c: Context) => {
   if (err instanceof Error) {
     return c.json({ error: err.message }, 500);
   }
-  // Fallback response for unknown errors
   return c.text("An unknown error occurred", 500);
 };
 
+const pkgPath = join(process.cwd(), 'package.json');
+const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'));
+
 export const routers: Router[] = [
   {
+    method: "OPTIONS",
+    path: ["/api/v1/"],
+    handler: async (c: Context) => {
+      return c.status(204);
+    }
+  },
+  {
     method: "GET",
-    path: ["/api/list"],
+    path: ["/api/v1/basic"],
+    handler: async (c: Context) => {
+      return c.json({
+        name: pkg.name,
+        version: pkg.version,
+        ts: Date.now(),
+      });
+    },
+  },
+  {
+    method: "GET",
+    path: ["/api/v1/status"],
+    handler: async (c: Context) => {
+      return c.text("OK");
+    },
+  },
+  {
+    method: "GET",
+    path: ["/api/v1/list"],
     handler: async (c: Context) => {
       let page: string | number | undefined = c.req.query("page");
       if (!page) {
@@ -33,7 +64,7 @@ export const routers: Router[] = [
       } else if (typeof page === "string") {
         page = parseInt(page);
       }
-      const messages = SQLite.getMessages();
+      const messages = await SQLite.getMessages();
       const pageSize = parseInt(Bun.env.CHANNEL_PAGE_SIZE!);
       const pages = Math.ceil(messages.length / pageSize);
       if (page < 1 || page > pages) {

@@ -1,19 +1,12 @@
 {
-  "name": "manager",
-  "module": "index.ts",
-  "version": "0.0.1",
-  "type": "module",
-  "scripts": {
-    "dev": "bun run --watch index.ts"
-  },
-  "devDependencies": {
-    "@types/bun": "latest"
-  },
-  "peerDependencies": {
-    "typescript": "^5.0.0"
-  },
-  "dependencies": {
-    "hono": "^4.6.13",
-    "telegram": "^2.26.8"
-  }
+    "name": "telegram-channel-parser",
+    "type": "module",
+    "version": "0.0.2",
+    "license": "GPL-3.0-only",
+    "devDependencies": {
+        "@types/bun": "latest"
+    },
+    "peerDependencies": {
+        "typescript": "^5.0.0"
+    }
 }

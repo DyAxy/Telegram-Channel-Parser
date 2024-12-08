@@ -8,6 +8,10 @@ import * as SQLite from "./sqlite";
 
 export const getLastMessage = async () => {
   try {
+    if (!Bun.env.CHANNEL_ID) {
+      throw Error("Channel ID is not set");
+    }
+    logger.info(`Getting last message from channel: ${Bun.env.CHANNEL_ID}`);
     const result = await client.invoke(
       new Api.messages.GetHistory({
         peer: Bun.env.CHANNEL_ID!,
@@ -74,7 +78,11 @@ const parseMessageToMarkdown = (message: Api.Message) => {
         );
         entityReplacements[entity.offset] = `[${text}](${entity.url})`;
       } else if (entity instanceof Api.MessageEntityUnderline) {
-        // Unsupported
+        const text = message.message.substring(
+          entity.offset,
+          entity.offset + entity.length
+        );
+        entityReplacements[entity.offset] = `__${text}__`;
       } else if (entity instanceof Api.MessageEntityStrike) {
         const text = message.message.substring(
           entity.offset,
@@ -82,7 +90,7 @@ const parseMessageToMarkdown = (message: Api.Message) => {
         );
         entityReplacements[entity.offset] = `~~${text}~~`;
       } else if (entity instanceof Api.MessageEntityCustomEmoji) {
-        // Unsupported
+        // @TODO Support CustomEmoji
       } else if (entity instanceof Api.MessageEntityBlockquote) {
         const text = message.message.substring(
           entity.offset,
@@ -105,18 +113,18 @@ const parseMessageToMarkdown = (message: Api.Message) => {
   }
   return markdownMessage;
 };
+
 const parsePhotoFromMessage = async (message: Api.Message) => {
   if (message.media instanceof Api.MessageMediaPhoto) {
     if (message.media.photo instanceof Api.Photo) {
       const result = await client.downloadMedia(message);
-      return (
-        "data:image/jpeg;base64," +
-        Buffer.from(result as Buffer).toString("base64")
-      );
+      // @TODO Support media upload
+      return "data:image/jpeg;base64," + (result as Buffer).toString("base64");
     }
   }
   return "";
 };
+
 const parseMessage = async (messages: Api.Message[]) => {
   const parsedMessages = [];
 
