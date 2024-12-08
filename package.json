@@ -1,6 +1,7 @@
 {
-    "name": "telegram-channel-praser",
+    "name": "telegram-channel-parser",
     "type": "module",
+    "version": "0.0.2",
     "license": "GPL-3.0-only",
     "devDependencies": {
         "@types/bun": "latest"
