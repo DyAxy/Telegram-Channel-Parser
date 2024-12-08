@@ -48,8 +48,9 @@ jobs:
         with:
           artifacts: "telegrampraser-${{ matrix.version }}_v${{ steps.get_version.outputs.VERSION }}.zip"
           token: ${{ secrets.GITHUB_TOKEN }}
-          tag: v${{ steps.get_version.outputs.VERSION }}
           name: Release ${{ steps.get_version.outputs.VERSION }}
           body: "Release of version ${{ steps.get_version.outputs.VERSION }}"
           draft: false
           prerelease: false
+          allowUpdates: true
+          generateReleaseNotes: true
