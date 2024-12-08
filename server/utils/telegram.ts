@@ -78,7 +78,11 @@ const parseMessageToMarkdown = (message: Api.Message) => {
         );
         entityReplacements[entity.offset] = `[${text}](${entity.url})`;
       } else if (entity instanceof Api.MessageEntityUnderline) {
-        // Unsupported
+        const text = message.message.substring(
+          entity.offset,
+          entity.offset + entity.length
+        );
+        entityReplacements[entity.offset] = `__${text}__`;
       } else if (entity instanceof Api.MessageEntityStrike) {
         const text = message.message.substring(
           entity.offset,
@@ -86,7 +90,7 @@ const parseMessageToMarkdown = (message: Api.Message) => {
         );
         entityReplacements[entity.offset] = `~~${text}~~`;
       } else if (entity instanceof Api.MessageEntityCustomEmoji) {
-        // Unsupported
+        // @TODO Support CustomEmoji
       } else if (entity instanceof Api.MessageEntityBlockquote) {
         const text = message.message.substring(
           entity.offset,
@@ -114,6 +118,7 @@ const parsePhotoFromMessage = async (message: Api.Message) => {
   if (message.media instanceof Api.MessageMediaPhoto) {
     if (message.media.photo instanceof Api.Photo) {
       const result = await client.downloadMedia(message);
+      // @TODO Support media upload
       return "data:image/jpeg;base64," + (result as Buffer).toString("base64");
     }
   }

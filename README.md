@@ -1,26 +1,45 @@
 # Telegram Channel Praser
 
 <div align="center">
-  <img src="./assets/banner.png" alt="banner">
+  <img src="./assets/banner.png" alt="banner" style="width: 75%;">
 </div>
 
-将 *Telegram* 的频道内的消息转换为 图片 + *Markdown* 文字的内容，并存储到本地数据库。
-内置  *HTTP* 服务器，可通过 *RESTful API* 灵活调用。
-基于 *Telegram MTProto* 协议，灵活导入、监听频道信息。
+将 *Telegram* 的频道内的消息转换为 Base64 编码后的图片 + *Markdown* 文字的内容，并存储到本地 SQLite 数据库。
+内置 *HTTP* 服务器，可通过 *RESTful API* 灵活调用。
+基于 *Telegram MTProto* 协议，相比于 Telegram Bot API 可以更加灵活的导入、监听频道的所有消息。
 
-**Telegram讨论组：** https://t.me/dyaogroup
+
+## :sparkles: 主要特性
+
+- :arrows_counterclockwise: 启动后自动同步频道历史消息
+- :satellite: 监听 Telegram 频道动态：
+  - :incoming_envelope: 新消息推送
+  - :pencil2: 消息编辑时自动更新
+  - :wastebasket: 消息删除时自动同步
+- :floppy_disk: 基于 SQLite3 实现的本地高性能、持久化存储
+- :rocket: 基于 Hono 的 RESTful API：
+  - :bar_chart: 便捷的消息查询接口
+  - :zap: 高性能数据访问
+  - :wrench: 易于扩展的接口设计
+
+## TODO List
+
+- 完善对于新特性的 parser
+  - `MessageEntityCustomEmoji` - 自定义 Emojipack
+  - `MessageEntitySpoiler` - 消息剧透遮罩效果
+  - `MessageMediaPhoto` - 图片剧透遮罩效果
+- 修复在多张图片附图场景下的图片缺失问题（只能获取到第一张附图）
+- 使用 MTProto + Bot API 混合结构
+  - 对于同步历史消息使用 MTProto API
+  - 对于新发送的消息采用 WebHook / Polling Bot API 实现
+  - 好处：可以最大程度地降低账号被封锁的风险
 
 ## 免责声明
 
-本项目因使用 Telegram MTProto 协议，所以无法承诺您的 Telegram 账号不会被 Telegram 官方所滥权，所以使用本项目所导致您的 Telegram 账号的损失应由自己承担。
-当您下载此副本后，即视为您接受本免责声明，也熟知使用此项目所可能带来的后果。
+> [!WARNING]
+> 警告： Telegram MTProto API 的限制比 Bot API 更为严格，使用本项目存在账号被封禁的风险。我们强烈建议您了解这些风险后再使用本项目。使用本项目即表示您已知晓并愿意承担所有风险，请勿因封号问题提交 Issue。
 
-## 当前特性
-
-- 启动后自动拉取频道历史消息
-- 监听 *Telegram Updates*：新消息、编辑消息、删除消息
-- *SQLite3* 历史消息本地存储
-- 基于 *Hono* 的 *RESTful API*，方便拉取消息
+**Telegram讨论组：** https://t.me/dyaogroup
 
 ## 项目结构
 
@@ -28,12 +47,14 @@
 
 ## 使用方法
 
-### Telegram Developer API
+### 申请 Telegram Developer API
+
 1. 在 [这里](https://my.telegram.org/ "这里") 登录你的 Telegram 账号
 2. 点击“API development tools”，填入 *App title* 和 *Short name* 保存即可。
-3. 保存后你需要 *api_id* 和 *api_hash*
+3. 需要保存 *api_id* 和 *api_hash*
 
-> **申请 API 属于高危操作**，特别是新注册的 Telegram 账号和使用 VoIP 语音号码注册的账号会加大封号概率，如被封号，请尽快向客服申诉申请解封。同时请勿将 API 泄露给他人。
+> [!IMPORTANT]
+>  请注意：**申请 API 属于高危操作**，特别是新注册的 Telegram 账号和使用 VoIP 语音号码注册的账号会加大封号概率，如被封号，请尽快向客服申诉申请解封，千万不要将 API 泄露给他人。
 
 > 来自 Telegram X 安卓端的 *api_id* 和 *api_hash*，**并不保证可用性**  
 API_ID=21724  
@@ -43,7 +64,7 @@ API_HASH=3e0cb5efcd52300aec5994fdfc5bdc16
 
 修改 .env 中的对应配置
 
-```
+```ini
 # 将 Telegram 获得的api_id api_hash 填入下方
 API_ID=123456
 API_HASH=1234567890abcdef1234567890abcdef
@@ -58,8 +79,15 @@ CHANNEL_ID=test
 # API分页功能，显示多少条内容一页
 CHANNEL_PAGE_SIZE=10
 
-# HTTP 监听端口
+# HTTP 监听 IP 和端口
+HOST=0.0.0.0
 PORT=3000
+
+# Session 会话文件保存路径，不推荐修改
+SESSION_FILE=./.session
+
+# Message SQLite 数据库文件保存路径，不推荐修改
+MESSAGE_SQLITE_FILE=./database/messages.db
 ```
 
 ## 启动程序
