@@ -32,4 +32,9 @@ jobs:
         uses: ncipollo/release-action@v1
         with:
           artifacts: "out/*"
-          token: ${{ secrets.YOUR_GITHUB_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag: v${{ steps.get_version.outputs.VERSION }}
+          name: Release ${{ steps.get_version.outputs.VERSION }}
+          body: "Release of version ${{ steps.get_version.outputs.VERSION }}"
+          draft: false
+          prerelease: false
