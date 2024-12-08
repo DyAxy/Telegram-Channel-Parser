@@ -9,14 +9,20 @@
 **Telegram讨论组：** https://t.me/dyaogroup
 
 ## 免责声明
+
 本项目因使用 Telegram MTProto 协议，所以无法承诺您的 Telegram 账号不会被 Telegram 官方所滥权，所以使用本项目所导致您的 Telegram 账号的损失应由自己承担。
 当您下载此副本后，即视为您接受本免责声明，也熟知使用此项目所可能带来的后果。
 
 ## 当前特性
+
 - 启动后自动拉取频道历史消息
 - 监听 *Telegram Updates*：新消息、编辑消息、删除消息
 - *SQLite3* 历史消息本地存储
 - 基于 *Hono* 的 *RESTful API*，方便拉取消息
+
+## 项目结构
+
+本项目采用 C/S (Client / Server) 前后端分离的结构，Client 正在开发中，故下文除非特别指出，否则均在 `./server` 文件夹下进行操作。
 
 ## 使用方法
 
@@ -32,7 +38,9 @@ API_ID=21724
 API_HASH=3e0cb5efcd52300aec5994fdfc5bdc16  
 
 ### 修改 .env.example 为 .env
+
 修改 .env 中的对应配置
+
 ```
 # 将 Telegram 获得的api_id api_hash 填入下方
 API_ID=123456
@@ -67,7 +75,11 @@ PORT=3000
 
 ## 持久化服务
 
-本项目使用 pm2 进行服务管理，确认 Session 登录成功后一键启动： `pm2 start ecosystem.config.js`
+本项目使用 pm2 进行服务管理，确认 Session 登录成功后一键启动： 
+
+```bash
+pm2 start ecosystem.config.js
+```
 
 安装依赖：`bun i -g pm2`
 
