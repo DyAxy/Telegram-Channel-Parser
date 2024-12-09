@@ -1,7 +1,7 @@
-import { Database } from "bun:sqlite";
 import fs from "fs";
+import { Database } from "bun:sqlite";
+
 import { logger } from "..";
-import type { DataMessages } from "../types";
 
 const MAX_CONTENT_LENGTH = 1000000; // ~1MB
 const MAX_RETRIES = 3;
@@ -33,13 +33,18 @@ export const initDatabase = async (): Promise<Database> => {
         `);
         stmt.run(Bun.env.CHANNEL_ID!, 1);
       })();
+    } else {
+      const stmt = database.prepare("SELECT * FROM config LIMIT 1");
+      const result = stmt.get() as DataConfig;
+      if (result.channel !== Bun.env.CHANNEL_ID) {
+        throw new Error("Database channel mismatch");
+      }
     }
-
     logger.info("Database initialized successfully");
     return database;
   } catch (error: any) {
     logger.error(`Database initialization failed: ${error.message}`);
-    throw new Error(`Failed to initialize database: ${error.message}`);
+    process.exit(1);
   }
 };
 
@@ -121,8 +126,6 @@ export class MessageManager {
   public async deleteMessage(messageId: number): Promise<void> {
     return this.retry(async () => {
       this.validateMessageId(messageId);
-      // 这里有个问题，DeletedMessageEvent 只会传 ids 过来
-      // 需要判断 peer database 中是否存在这个 message_id
       const exists = await this.messageExists(messageId);
       if (exists) {
         const result = this.database.transaction(() => {

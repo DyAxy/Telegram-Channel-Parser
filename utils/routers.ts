@@ -1,9 +1,9 @@
+
+import { join } from "path";
+import { readFileSync } from "fs";
 import type { Context } from "hono";
 import { logger as HonoLogger } from "hono/logger";
 import { HTTPException } from "hono/http-exception";
-import { readFileSync } from "fs";
-import { join } from "path";
-import type { Router } from '../types'
 
 import { logger } from "..";
 import * as SQLite from "./sqlite";

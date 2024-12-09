@@ -8,7 +8,6 @@ import { NewMessage } from "telegram/events";
 import { EditedMessage } from "telegram/events/EditedMessage";
 import { DeletedMessage } from "telegram/events/DeletedMessage";
 import { LogLevel } from "telegram/extensions/Logger";
-import type { DataMessages } from "./types";
 
 export const logger = new Logger();
 

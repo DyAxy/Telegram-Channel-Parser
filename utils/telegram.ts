@@ -179,6 +179,18 @@ export const handleEditedMessage = async (event: NewMessageEvent) => {
 };
 export const handleDeleteMessage = async (event: DeletedMessageEvent) => {
   if (event.peer instanceof Api.PeerChannel) {
+    const history = await client.invoke(
+      new Api.messages.GetHistory({
+        peer: event.peer,
+        limit: event.deletedIds.length,
+      })
+    );
+    if (!(history instanceof Api.messages.ChannelMessages)) return;
+    if (!(history.chats[0] instanceof Api.Channel)) return;
+
+    if (history.chats[0].username !== Bun.env.CHANNEL_ID!) return;
+    if (!history.chats[0].broadcast) return;
+
     const result = await client.getMessages(Bun.env.CHANNEL_ID!, {
       ids: event.deletedIds,
     });

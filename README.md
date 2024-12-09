@@ -1,12 +1,12 @@
-# Telegram Channel Praser
+# Telegram Channel Parser
 
 <div align="center">
   <img src="./assets/banner.png" alt="banner" style="width: 75%;">
 </div>
 
-将 *Telegram* 的频道内的消息转换为 Base64 编码后的图片 + *Markdown* 文字的内容，并存储到本地 SQLite 数据库。
-内置 *HTTP* 服务器，可通过 *RESTful API* 灵活调用。
-基于 *Telegram MTProto* 协议，相比于 Telegram Bot API 可以更加灵活的导入、监听频道的所有消息。
+将 *Telegram* 的频道内的消息转换为 Base64 编码后的图片 + *Markdown* 文字的内容，并存储到本地 SQLite 数据库。  
+内置 *HTTP* 服务器，可通过 *RESTful API* 灵活调用。  
+基于 *Telegram MTProto* 协议，相比于 Telegram Bot API 可以更加灵活的导入、监听频道的所有消息。  
 
 ## :sparkles: 主要特性
 
@@ -24,7 +24,8 @@
 ## 免责声明
 
 > [!WARNING]
-> 警告： Telegram MTProto API 的限制比 Bot API 更为严格，使用本项目存在账号被封禁的风险。我们强烈建议您了解这些风险后再使用本项目。使用本项目即表示您已知晓并愿意承担所有风险，请勿因封号问题提交 Issue。
+> 警告： Telegram MTProto API 的限制比 Bot API 更为严格，使用本项目存在账号被封禁的风险。  
+> 我们强烈建议您了解这些风险后再使用本项目。使用本项目即表示您已知晓并愿意承担所有风险，请勿因封号问题提交 Issue。
 
 **Telegram讨论组：** https://t.me/dyaogroup
 
@@ -45,7 +46,7 @@
 
 ### 从构建启动
 
-在这里 [https://github.com/DyAxy/Telegram-Channel-Parser/releases](https://github.com/DyAxy/Telegram-Channel-Parser/releases)
+在这里 [https://github.com/DyAxy/Telegram-Channel-Parser/releases](https://github.com/DyAxy/Telegram-Channel-Parser/releases)  
 根据自己的操作系统下载对应压缩包，修改权限和 env 后执行即可
 
 ```
