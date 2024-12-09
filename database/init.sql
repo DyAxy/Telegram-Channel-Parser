@@ -13,6 +13,12 @@ CREATE TABLE "messages" (
   "created_at" INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
   "updated_at" INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
 );
+CREATE TABLE "config" (
+  -- 数据对应频道
+  "channel" TEXT NOT NULL,
+  -- 数据版本
+  "version" INTEGER NOT NULL UNIQUE
+);
 
 -- 创建索引
 CREATE UNIQUE INDEX "idx_messages_message_id" ON "messages" ("message_id");

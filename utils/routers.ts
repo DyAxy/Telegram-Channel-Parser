@@ -38,7 +38,7 @@ export const routers: Router[] = [
   },
   {
     method: "GET",
-    path: ["/api/v1/basic"],
+    path: ["/api/v1/version"],
     handler: async (c: Context) => {
       return c.json({
         name: pkg.name,

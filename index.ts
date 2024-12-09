@@ -8,7 +8,7 @@ import { NewMessage } from "telegram/events";
 import { EditedMessage } from "telegram/events/EditedMessage";
 import { DeletedMessage } from "telegram/events/DeletedMessage";
 import { LogLevel } from "telegram/extensions/Logger";
-import type { DataMessages } from './types'
+import type { DataMessages } from "./types";
 
 export const logger = new Logger();
 
@@ -87,36 +87,43 @@ const initTelegram = async () => {
 export const client = await initTelegram();
 
 const checkDatabase = async () => {
-  logger.info("Checking database...");
-  const savedMessages = await SQLite.getMessages() as DataMessages[];
-  const lastMessage = await Telegram.getLastMessage();
-  const startId =
-    savedMessages.length === 0
-      ? 0
-      : savedMessages[savedMessages.length - 1].message_id;
-  const endId = lastMessage.messages[0].id + 1;
-  const itemsPerTimes = 500;
+  try {
+    logger.info("Checking database...");
+    const savedMessages = (await SQLite.getMessages()) as DataMessages[];
+    const lastMessage = await Telegram.getLastMessage();
+    const startId =
+      savedMessages.length === 0
+        ? 0
+        : savedMessages[savedMessages.length - 1].message_id;
+    const endId = lastMessage.messages[0].id + 1;
+    const itemsPerTimes = 500;
 
-  if (startId + 1 < endId) {
-    logger.info("Fetching messages...");
-    const times = Math.ceil((endId - startId) / itemsPerTimes);
-    const messages = [];
-    for (let i = 0; i < times; i++) {
-      const minId = startId + i * itemsPerTimes;
-      const maxId =
-        minId + itemsPerTimes > endId ? endId : minId + itemsPerTimes;
+    if (startId + 1 < endId) {
+      logger.info("Fetching messages...");
+      const times = Math.ceil((endId - startId) / itemsPerTimes);
+      const messages = [];
+      for (let i = 0; i < times; i++) {
+        const minId = startId + i * itemsPerTimes;
+        const maxId =
+          minId + itemsPerTimes > endId ? endId : minId + itemsPerTimes;
 
-      const result = await Telegram.getMessages(minId, maxId);
-      messages.push(...result);
-      break;
+        const result = await Telegram.getMessages(minId, maxId);
+        messages.push(...result);
+        break;
+      }
+      messages.sort((a, b) => a.message_id - b.message_id);
+      for (const message of messages) {
+        SQLite.insertMessage(
+          message.message_id,
+          JSON.stringify(message.content)
+        );
+      }
+      logger.info("Fetch messages done");
+    } else {
+      logger.info("No new messages");
     }
-    messages.sort((a, b) => a.message_id - b.message_id);
-    for (const message of messages) {
-      SQLite.insertMessage(message.message_id, JSON.stringify(message.content));
-    }
-    logger.info("Fetch messages done");
-  } else {
-    logger.info("No new messages");
+  } catch (err) {
+    process.exit(1);
   }
 };
 await checkDatabase();

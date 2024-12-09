@@ -1,4 +1,4 @@
-name: Compile and Release for Server
+name: Compile and Release
 
 on:
     push:
@@ -54,12 +54,10 @@ jobs:
                   max_attempts: 3
                   retry_wait_seconds: 5
                   command: |
-                      cd server/ || { echo "Directory not found"; exit 1; }
                       bun install --no-install-postinstall || { echo "Failed to install dependencies"; exit 1; }
 
             - name: Compile Code
               run: |
-                  cd server/ || { echo "Directory not found"; exit 1; }
                   mkdir out
                   mkdir logs
                   bun build --compile --target=bun-${{ matrix.version }} ./index.ts --outfile out/telegram-parser-${{ matrix.version }}_v${{ steps.get_version.outputs.VERSION }}
@@ -81,7 +79,7 @@ jobs:
 
             - name: Package Output
               run: |
-                  cd server/out/ || { echo "Directory not found"; exit 1; }
+                  cd out/ || { echo "Directory not found"; exit 1; }
                   if [[ "${{ matrix.version }}" == linux* ]]; then
                     tar -cJf ${GITHUB_WORKSPACE}/telegram-parser-${{ matrix.version }}_v${{ steps.get_version.outputs.VERSION }}.tar.xz *
                   else
