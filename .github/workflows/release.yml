@@ -65,8 +65,9 @@ jobs:
                   cp ${GITHUB_WORKSPACE}/LICENSE ./out/LICENSE
                   cp .env.example ./out/.env.example
                   cp -r database ./out/database
-                  cp -r logs ./out/logs
                   cp -r scripts ./out/scripts
+                  cp -r static ./out/static
+                  cp -r logs ./out/logs
 
             # - name: Upx Compress
             #   run: |
