@@ -1,5 +1,5 @@
 {
-  "name": "telegram-channel-parser-api",
+  "name": "telegram-channel-parser",
   "module": "index.ts",
   "license": "GPL-3.0-only",
   "version": "0.0.3",
