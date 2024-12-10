@@ -6,9 +6,15 @@ interface DataMessages {
   created_at: number;
   updated_at: number;
 }
+interface DataConfigMe {
+  title: string;
+  description: string;
+  photo: string;
+}
 interface DataConfig {
   channel: string;
   version: number;
+  data: DataConfigMe;
 }
 
 interface Router {

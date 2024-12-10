@@ -172,7 +172,7 @@ export class MessageManager {
         "SELECT rowid as id, message_id, content, created_at, updated_at FROM messages"
       );
       const messages = stmt.all() as Array<DataMessages>;
-
+      messages.sort((a, b) => b.message_id - a.message_id);
       return messages.map((message) => ({
         id: message.id,
         message_id: message.message_id,
@@ -273,6 +273,25 @@ export class MessageManager {
       return result.count;
     }, "getMessageCount");
   }
+  public async getMe(): Promise<string> {
+    return this.retry(async () => {
+      const stmt = this.database.prepare(`
+        SELECT data 
+        FROM config
+      `);
+      const { data } = stmt.get() as { data: string };
+      return data;
+    }, "updateMe");
+  }
+  public async updateMe(data: string): Promise<void> {
+    return this.retry(async () => {
+      const stmt = this.database.prepare(`
+        UPDATE config 
+        SET data = ?
+      `);
+      stmt.run(data);
+    }, "updateMe");
+  }
 }
 
 // 单例模式的工厂函数
@@ -331,4 +350,14 @@ export const getMessageCount = async (): Promise<number> => {
 export const messageExists = async (messageId: number): Promise<boolean> => {
   const manager = await getMessageManager();
   return manager.messageExists(messageId);
+};
+
+export const getMe = async (): Promise<string> => {
+  const manager = await getMessageManager();
+  return manager.getMe();
+};
+
+export const updateMe = async (data: string): Promise<void> => {
+  const manager = await getMessageManager();
+  return manager.updateMe(data);
 };

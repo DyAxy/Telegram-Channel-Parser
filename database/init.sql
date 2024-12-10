@@ -17,7 +17,9 @@ CREATE TABLE "config" (
   -- 数据对应频道
   "channel" TEXT NOT NULL,
   -- 数据版本
-  "version" INTEGER NOT NULL UNIQUE
+  "version" INTEGER NOT NULL UNIQUE,
+  -- 数据内容
+  "data" TEXT NULL
 );
 
 -- 创建索引

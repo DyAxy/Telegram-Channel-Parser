@@ -6,6 +6,20 @@ import type { DeletedMessageEvent } from "telegram/events/DeletedMessage";
 
 import * as SQLite from "./sqlite";
 
+export const getMe = async () => {
+  const channel = (await client.getEntity(Bun.env.CHANNEL_ID!)) as Api.Channel;
+  const fullChannel = await client.invoke(
+    new Api.channels.GetFullChannel({
+      channel: Bun.env.CHANNEL_ID!,
+    })
+  );
+  const result = await client.downloadProfilePhoto(Bun.env.CHANNEL_ID!);
+  return {
+    title: channel.title,
+    description: fullChannel.fullChat.about,
+    photo: "data:image/jpeg;base64," + (result as Buffer).toString("base64"),
+  };
+};
 export const getLastMessage = async () => {
   try {
     if (!Bun.env.CHANNEL_ID) {

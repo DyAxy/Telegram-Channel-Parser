@@ -1,4 +1,3 @@
-
 import { join } from "path";
 import { readFileSync } from "fs";
 import type { Context } from "hono";
@@ -25,8 +24,8 @@ export const errorHandler = (err: Error, c: Context) => {
   return c.text("An unknown error occurred", 500);
 };
 
-const pkgPath = join(process.cwd(), 'package.json');
-const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'));
+const pkgPath = join(process.cwd(), "package.json");
+const pkg = JSON.parse(readFileSync(pkgPath, "utf-8"));
 
 export const routers: Router[] = [
   {
@@ -34,7 +33,7 @@ export const routers: Router[] = [
     path: ["/api/v1/"],
     handler: async (c: Context) => {
       return c.status(204);
-    }
+    },
   },
   {
     method: "GET",
@@ -52,6 +51,14 @@ export const routers: Router[] = [
     path: ["/api/v1/status"],
     handler: async (c: Context) => {
       return c.text("OK");
+    },
+  },
+  {
+    method: "GET",
+    path: ["/api/v1/me"],
+    handler: async (c: Context) => {
+      const result = await SQLite.getMe();
+      return c.json(JSON.parse(result));
     },
   },
   {
