@@ -1,102 +1,110 @@
 name: Compile and Release
 
 on:
-    push:
-        branches:
-            - master
-        paths:
-            - "package.json"
-            - ".github/**"
+  push:
+    branches:
+      - master
+    paths:
+      - "package.json"
+      - ".github/**"
+      - "static/**"
 jobs:
-    build:
-        runs-on: ubuntu-latest
-        strategy:
-            matrix:
-                version: ["linux-x64", "linux-arm64", "windows-x64", "darwin-x64", "darwin-arm64"]
-        steps:
-            - uses: actions/checkout@v4
-            - uses: oven-sh/setup-bun@v2.0.1
-            - name: Install UPX
-              uses: nick-fields/retry@v2
-              with:
-                  timeout_seconds: 35
-                  max_attempts: 3
-                  retry_wait_seconds: 5
-                  command: |
-                      UPX_VERSION=$(curl -s https://api.github.com/repos/upx/upx/releases/latest | jq -r .tag_name | sed 's/^v//')
-                      echo "Latest UPX version: ${UPX_VERSION}"
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        version:
+          [
+            "linux-x64",
+            "linux-arm64",
+            "windows-x64",
+            "darwin-x64",
+            "darwin-arm64",
+          ]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2.0.1
+      - name: Install UPX
+        uses: nick-fields/retry@v2
+        with:
+          timeout_seconds: 35
+          max_attempts: 3
+          retry_wait_seconds: 5
+          command: |
+            UPX_VERSION=$(curl -s https://api.github.com/repos/upx/upx/releases/latest | jq -r .tag_name | sed 's/^v//')
+            echo "Latest UPX version: ${UPX_VERSION}"
 
-                      wget "https://github.com/upx/upx/releases/download/v${UPX_VERSION}/upx-${UPX_VERSION}-amd64_linux.tar.xz"
-                      tar -xf "upx-${UPX_VERSION}-amd64_linux.tar.xz"
-                      sudo mv "upx-${UPX_VERSION}-amd64_linux/upx" /usr/local/bin/
-                      rm -rf "upx-${UPX_VERSION}-amd64_linux"*
+            wget "https://github.com/upx/upx/releases/download/v${UPX_VERSION}/upx-${UPX_VERSION}-amd64_linux.tar.xz"
+            tar -xf "upx-${UPX_VERSION}-amd64_linux.tar.xz"
+            sudo mv "upx-${UPX_VERSION}-amd64_linux/upx" /usr/local/bin/
+            rm -rf "upx-${UPX_VERSION}-amd64_linux"*
 
-                      upx --version
+            upx --version
 
-            - name: Dependencies version
-              run: |
-                  echo "=== System Info ==="
-                  uname -a && cat /etc/os-release
+      - name: Dependencies version
+        run: |
+          echo "=== System Info ==="
+          uname -a && cat /etc/os-release
 
-                  echo -e "\n=== Dependencies Version ==="
-                  bun --version
+          echo -e "\n=== Dependencies Version ==="
+          bun --version
 
-            - name: Extract version number
-              id: get_version
-              run: |
-                  VERSION=$(jq -r .version < package.json)
-                  echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
+      - name: Extract version number
+        id: get_version
+        run: |
+          VERSION=$(jq -r .version < package.json)
+          echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
 
-            - name: Install Dependencies
-              uses: nick-fields/retry@v2
-              with:
-                  timeout_seconds: 30
-                  max_attempts: 3
-                  retry_wait_seconds: 5
-                  command: |
-                      bun install --no-install-postinstall || { echo "Failed to install dependencies"; exit 1; }
+      - name: Install Dependencies
+        uses: nick-fields/retry@v2
+        with:
+          timeout_seconds: 30
+          max_attempts: 3
+          retry_wait_seconds: 5
+          command: |
+            bun install --no-install-postinstall || { echo "Failed to install dependencies"; exit 1; }
 
-            - name: Compile Code
-              run: |
-                  mkdir out
-                  mkdir logs
-                  bun build --compile --target=bun-${{ matrix.version }} ./index.ts --outfile out/telegram-parser-${{ matrix.version }}_v${{ steps.get_version.outputs.VERSION }}
-                  cp ${GITHUB_WORKSPACE}/README.md ./out/README.md
-                  cp ${GITHUB_WORKSPACE}/LICENSE ./out/LICENSE
-                  cp .env.example ./out/.env.example
-                  cp -r database ./out/database
-                  cp -r scripts ./out/scripts
-                  cp -r static ./out/static
-                  cp -r logs ./out/logs
+      - name: Compile Code
+        run: |
+          mkdir out
+          mkdir logs
+          bun build --compile --target=bun-${{ matrix.version }} ./index.ts --outfile out/telegram-parser-${{ matrix.version }}_v${{ steps.get_version.outputs.VERSION }}
+          cp ${GITHUB_WORKSPACE}/README.md ./out/README.md
+          cp ${GITHUB_WORKSPACE}/LICENSE ./out/LICENSE
+          cp .env.example ./out/.env.example
+          cp -r database ./out/database
+          cp -r scripts ./out/scripts
+          cp -r static ./out/static
+          cp -r logs ./out/logs
 
-            # - name: Upx Compress
-            #   run: |
-            #       cd server/out/ || { echo "Directory not found"; exit 1; }
-            #       if [[ "${{ matrix.version }}" != darwin* ]]; then
-            #         upx --best telegram-parser-${{ matrix.version }}_v${{ steps.get_version.outputs.VERSION }}
-            #       else
-            #         echo "Skipping UPX compression for macOS & Windows build"
-            #       fi
+      # - name: Upx Compress
+      #   run: |
+      #       cd server/out/ || { echo "Directory not found"; exit 1; }
+      #       if [[ "${{ matrix.version }}" != darwin* ]]; then
+      #         upx --best telegram-parser-${{ matrix.version }}_v${{ steps.get_version.outputs.VERSION }}
+      #       else
+      #         echo "Skipping UPX compression for macOS & Windows build"
+      #       fi
 
-            - name: Package Output
-              run: |
-                  cd out/ || { echo "Directory not found"; exit 1; }
-                  if [[ "${{ matrix.version }}" == linux* ]]; then
-                    tar -cJf ${GITHUB_WORKSPACE}/telegram-parser-${{ matrix.version }}_v${{ steps.get_version.outputs.VERSION }}.tar.xz *
-                  else
-                    zip -r ${GITHUB_WORKSPACE}/telegram-parser-${{ matrix.version }}_v${{ steps.get_version.outputs.VERSION }}.zip *
-                  fi
+      - name: Package Output
+        run: |
+          cd out/ || { echo "Directory not found"; exit 1; }
+          if [[ "${{ matrix.version }}" == linux* ]]; then
+            tar -cJf ${GITHUB_WORKSPACE}/telegram-parser-${{ matrix.version }}_v${{ steps.get_version.outputs.VERSION }}.tar.xz *
+          else
+            zip -r ${GITHUB_WORKSPACE}/telegram-parser-${{ matrix.version }}_v${{ steps.get_version.outputs.VERSION }}.zip *
+          fi
 
-            - name: Create GitHub Release
-              uses: ncipollo/release-action@v1
-              with:
-                  artifacts: |
-                      ${{ startsWith(matrix.version, 'linux') && format('telegram-parser-{0}_v{1}.tar.xz', matrix.version, steps.get_version.outputs.VERSION) || format('telegram-parser-{0}_v{1}.zip', matrix.version, steps.get_version.outputs.VERSION) }}
-                  token: ${{ secrets.GITHUB_TOKEN }}
-                  tag: v${{ steps.get_version.outputs.VERSION }}
-                  name: Release ${{ steps.get_version.outputs.VERSION }}
-                  body: "Release of version ${{ steps.get_version.outputs.VERSION }}"
-                  draft: false
-                  prerelease: false
-                  allowUpdates: true
-                  generateReleaseNotes: true
+      - name: Create GitHub Release
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: |
+            ${{ startsWith(matrix.version, 'linux') && format('telegram-parser-{0}_v{1}.tar.xz', matrix.version, steps.get_version.outputs.VERSION) || format('telegram-parser-{0}_v{1}.zip', matrix.version, steps.get_version.outputs.VERSION) }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag: v${{ steps.get_version.outputs.VERSION }}
+          name: Release ${{ steps.get_version.outputs.VERSION }}
+          body: "Release of version ${{ steps.get_version.outputs.VERSION }}"
+          draft: false
+          prerelease: false
+          allowUpdates: true
+          generateReleaseNotes: true
