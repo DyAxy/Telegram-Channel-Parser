@@ -1,24 +1,35 @@
 {
-  "name": "telegram-channel-parser",
-  "module": "index.ts",
-  "license": "GPL-3.0-only",
-  "version": "0.0.3",
-  "type": "module",
-  "scripts": {
-    "dev": "bun run --watch index.ts",
-    "start": "bun run index.ts"
-  },
-  "devDependencies": {
-    "@types/bun": "^1.1.14"
-  },
-  "peerDependencies": {
-    "typescript": "^5.0.0"
-  },
-  "dependencies": {
-    "hono": "^4.6.13",
-    "telegram": "^2.26.8"
-  },
-  "trustedDependencies": [
-    "es5-ext"
-  ]
+    "name": "telegram-channel-parser",
+    "module": "index.ts",
+    "license": "GPL-3.0-only",
+    "version": "0.0.3",
+    "type": "module",
+    "scripts": {
+        "dev": "bun run --hot index.ts",
+        "start": "bun run index.ts"
+    },
+    "devDependencies": {
+        "@types/bun": "^1.1.14"
+    },
+    "peerDependencies": {
+        "typescript": "^5.0.0"
+    },
+    "dependencies": {
+        "hono": "^4.6.13",
+        "telegram": "^2.26.8"
+    },
+    "supportedArchitectures": {
+        "os": [
+            "win32",
+            "darwin",
+            "linux"
+        ],
+        "cpu": [
+            "x64",
+            "arm64"
+        ]
+    },
+    "trustedDependencies": [
+        "es5-ext"
+    ]
 }

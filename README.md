@@ -46,18 +46,31 @@
 
 ### 从构建启动
 
-在这里 [https://github.com/DyAxy/Telegram-Channel-Parser/releases](https://github.com/DyAxy/Telegram-Channel-Parser/releases)  
-根据自己的操作系统下载对应压缩包，修改权限和 env 后执行即可
+> [!IMPORTANT]
+> 请注意：由 GitHub CI 自动构建的 x64 二进制包 **不支持没有 AVX2 的古董型号 CPU**，例如 Haswell 系列之前的 CPU。   
+> 自动构建工作流正在使用 Ubuntu Intel x64 环境 + 交叉编译技术，因此如果无法正常运行，请选择 [从源码启动](#从源码启动) 或者提交 PR！
+
+1. 在 [Releases](https://github.com/DyAxy/Telegram-Channel-Parser/releases) 页面根据自己的环境下载对应压缩包
+2. 解压压缩包 (`tar -zxvf telegram-parser*.tar.gz`)
+3. 进入解压后的目录 (`cd telegram-parser*`)
+4. 修改权限 (`chmod +x telegram-parser*`)
+5. 使用 `cp .env.example .env` 后修改 `.env` 的配置内容
+6. 启动程序 (`./telegram-parser*`)
+7. 根据提示输入手机号、Telegram 收到的验证码、二次密码等。
+8. 第一次使用会创建数据库并拉取频道内容，后续每次启动只会拉取最新内容。
+9. 如有开机自启动等需求，请参阅 [持久化服务](#持久化服务)
 
 ```
+项目文件结构
 ├── database/               # 数据库目录
-│   ├── init.sql            # 数据库导入文件
+│   ├── init.sql            # 数据库初始化文件，请不要删除
+|   ├── messages.db         # 存储消息的 SQLite 数据库
 │   └── ...
 ├── static/                 # 前端静态目录
 │   └── ...
 ├── .env                    # 环境变量文件
 ├── .session                # Session 文件（登陆后才会有）
-├── telegramparser          # 程序主文件
+├── telegram-parser_...     # 程序主文件
 └── ...                     # 其他文件
 ```
 
@@ -70,11 +83,13 @@
 4. 使用 `bun run dev` 启动服务端。
 5. 根据提示输入手机号、Telegram收到的验证码、二次密码等。
 6. 第一次使用会创建数据库并拉取频道内容，后续每次启动只会拉取最新内容。
-7. 如果需要持久化服务
+7. 如有开机自启动等需求，请参阅 [持久化服务](#持久化服务)
+
+## 持久化服务
    
-   1. 本项目使用 pm2 进行服务管理，安装依赖 pm2：`bun i -g pm2`
-   2. 先使用 `bun run dev` 启动并成功登录后，关闭服务端
-   3. 确认 Session 登录成功后一键启动: `pm2 start ecosystem.config.js`
+1. 本项目使用 pm2 进行服务管理，安装依赖 pm2：`bun i -g pm2`
+2. 先使用 `bun run dev` 启动并成功登录后，关闭服务端
+3. 确认 Session 登录成功后一键启动: `pm2 start ecosystem.config.js`
 
 ### 修改 .env.example 为 .env
 
@@ -110,10 +125,10 @@ MESSAGE_SQLITE_FILE=./database/messages.db
 
 当前使用：`/api/v1/`
 
-| 名称 | 路径 | 方法 | 参数 | 返回 |
-| ------------ | ------------ | ------------ | ------------ | ------------ |
+| 名称     | 路径      | 方法  | 参数 | 返回                               |
+| -------- | --------- | ----- | ---- | ---------------------------------- |
 | 版本信息 | `version` | `GET` | `无` | `{"name":"","version":"","ts": 0}` |
-| 拉取列表 | `list` | `GET` | `无` | `{"data":[],"total":0}` |
+| 拉取列表 | `list`    | `GET` | `无` | `{"data":[],"total":0}`            |
 
 
 ... 待完善，可参见 ./utils/routers.ts 定义

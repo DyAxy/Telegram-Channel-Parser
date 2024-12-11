@@ -7,7 +7,7 @@ CREATE TABLE "messages" (
   "id" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
   -- 消息 id
   "message_id" INTEGER NOT NULL UNIQUE,
-  -- 内容缓存 (已加密)
+  -- 内容缓存 （JSON 明文）
   "content" TEXT NOT NULL,
   -- Unix 时间戳
   "created_at" INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),

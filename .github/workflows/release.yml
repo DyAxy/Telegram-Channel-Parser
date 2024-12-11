@@ -72,11 +72,12 @@ jobs:
           cp ${GITHUB_WORKSPACE}/README.md ./out/README.md
           cp ${GITHUB_WORKSPACE}/LICENSE ./out/LICENSE
           cp package.json ./out/package.json
+          cp ecosystem.config.js  ./out/ecosystem.config.js
           cp .env.example ./out/.env.example
           cp -r database ./out/database
           cp -r scripts ./out/scripts
           cp -r static ./out/static
-          cp -r logs ./out/logs
+          mkdir -p ./out/logs
 
       # - name: Upx Compress
       #   run: |
