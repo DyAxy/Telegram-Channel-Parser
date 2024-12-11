@@ -96,28 +96,29 @@ jobs:
                   CURRENT_VERSION: ${{ steps.get_version.outputs.VERSION }}
               with:
                   script: |
-                            const releases = await github.rest.repos.listReleases({
-                              owner: context.repo.owner,
-                              repo: context.repo.repo
-                            });
-                            
-                            console.log(`Releases: ${context.repo.owner}/${context.repo.repo}`, releases.data.map(r => r.tag_name));
-                            console.log(`Creating version: v${process.env.CURRENT_VERSION}`);
-                            
-                            if (releases.data.length === 0) {
-                              core.setOutput('version', 'first-commit');
-                              core.setOutput('compare_url', `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/commits`);
-                            } else {
-                              const previousRelease = releases.data[0];
-                              const previousTag = previousRelease.tag_name;
-                              const previousVersion = previousTag.replace('v', '');
-                              console.log(`Previous version: ${previousTag}`);
-                              core.setOutput('version', previousVersion);
-                              core.setOutput('compare_url', 
-                                `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/compare/v${previousVersion}...v${process.env.CURRENT_VERSION}`
-                              );
-                            }
+                      const releases = await github.rest.repos.listReleases({
+                        owner: context.repo.owner,
+                        repo: context.repo.repo
+                      });
 
+                      console.log(`Releases: ${context.repo.owner}/${context.repo.repo}`, releases.data.map(r => r.tag_name));
+                      console.log(`Creating version: v${process.env.CURRENT_VERSION}`);
+
+                      if (releases.data.length === 0) {
+                        core.setOutput('version', 'first-commit');
+                        core.setOutput('compare_url', `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/commits`);
+                        core.setOutput('changes_text', 'all commits');
+                      } else {
+                        const previousRelease = releases.data[0];
+                        const previousTag = previousRelease.tag_name;
+                        const previousVersion = previousTag.replace('v', '');
+                        console.log(`Previous version: ${previousTag}`);
+                        core.setOutput('version', previousVersion);
+                        core.setOutput('compare_url', 
+                          `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/compare/v${previousVersion}...v${process.env.CURRENT_VERSION}`
+                        );
+                        core.setOutput('changes_text', `changes since v${previousVersion}`);
+                      }
 
             - name: Create GitHub Release
               uses: ncipollo/release-action@v1
@@ -130,7 +131,7 @@ jobs:
                   body: |
                       Release of version ${{ steps.get_version.outputs.VERSION }}
 
-                      [View ${{ steps.get_prev_version.outputs.version == 'first-commit' && 'all commits' || format('changes since v%s', steps.get_prev_version.outputs.version) }}](${{ steps.get_prev_version.outputs.compare_url }})
+                      [View ${{ steps.get_prev_version.outputs.changes_text }}](${{ steps.get_prev_version.outputs.compare_url }})
                   draft: false
                   prerelease: false
                   allowUpdates: true
