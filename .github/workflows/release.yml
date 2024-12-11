@@ -91,17 +91,25 @@ jobs:
                   fi
             - name: Get Previous Version
               id: get_prev_version
-              run: |
-                  PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
-                  if [ -z "$PREV_TAG" ]; then
-                    FIRST_COMMIT=$(git rev-list --max-parents=0 HEAD)
-                    echo "version=first-commit" >> $GITHUB_OUTPUT
-                    echo "compare_url=${{ github.server_url }}/${{ github.repository }}/commits" >> $GITHUB_OUTPUT
-                  else
-                    PREV_VERSION=${PREV_TAG#v}
-                    echo "version=${PREV_VERSION}" >> $GITHUB_OUTPUT
-                    echo "compare_url=${{ github.server_url }}/${{ github.repository }}/compare/${PREV_TAG}...v${{ steps.get_version.outputs.VERSION }}" >> $GITHUB_OUTPUT
-                  fi
+              uses: actions/github-script@v7
+              with:
+                  script: |
+                      const releases = await github.rest.repos.listReleases({
+                        owner: context.repo.owner,
+                        repo: context.repo.repo
+                      });
+
+                      if (releases.data.length === 0) {
+                        core.setOutput('version', 'first-commit');
+                        core.setOutput('compare_url', `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/commits`);
+                      } else {
+                        const prevTag = releases.data[0].tag_name;
+                        const prevVersion = prevTag.replace('v', '');
+                        core.setOutput('version', prevVersion);
+                        core.setOutput('compare_url', 
+                          `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/compare/${prevTag}...v${process.env.VERSION}`
+                        );
+                      }
 
             - name: Create GitHub Release
               uses: ncipollo/release-action@v1
@@ -114,7 +122,7 @@ jobs:
                   body: |
                       Release of version ${{ steps.get_version.outputs.VERSION }}
 
-                      ${{ steps.get_prev_version.outputs.version == 'first-commit' && 'First Release' || format('[View changes since v%s](%s)', steps.get_prev_version.outputs.version, steps.get_prev_version.outputs.compare_url) }}
+                      [View ${{ steps.get_prev_version.outputs.version == 'first-commit' && 'all commits' || format('changes since v%s', steps.get_prev_version.outputs.version) }}](${{ steps.get_prev_version.outputs.compare_url }})
                   draft: false
                   prerelease: false
                   allowUpdates: true
