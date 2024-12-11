@@ -2,6 +2,7 @@ import fs from "fs";
 import { Database } from "bun:sqlite";
 
 import { logger } from "..";
+import type { ZlibCompressionOptions } from "bun";
 
 const MAX_CONTENT_LENGTH = 1000000; // ~1MB
 const MAX_RETRIES = 3;
@@ -92,9 +93,30 @@ export class MessageManager {
       if (typeof data !== "string") {
         throw new TypeError("Input must be a string");
       }
+      const cpuLevel = this.validateCompressionLevel(parseInt(Bun.env.CONTENT_ENCODE_CPU_LEVEL as string));
+      const memLevel = this.validateMemLevel(parseInt(Bun.env.CONTENT_ENCODE_CPU_LEVEL as string));
       const textEncoder = new TextEncoder();
-      const compressedData = Bun.deflateSync(textEncoder.encode(data));
-      return Buffer.from(compressedData).toString("base64");
+
+      const originalLength = data.length;
+      const originalSize = Buffer.from(data).length;
+
+      logger.debug(`Original content: ${originalLength} chars, ${(originalSize / 1024).toFixed(3)}KB`);
+      logger.debug(`Gzip Level: cpu ${cpuLevel}, mem${memLevel}`);
+
+      const compressedData = Bun.gzipSync(textEncoder.encode(data), {
+        level: cpuLevel,
+        memLevel
+      });
+
+      const compressedSize = compressedData.length;
+      const base64Result = Buffer.from(compressedData).toString("base64");
+      const compressionRatio = (originalSize / compressedSize).toFixed(2);
+
+      logger.debug(`Compressed size: ${(compressedSize / 1024).toFixed(2)}KB`);
+      logger.debug(`Compression ratio: ${compressionRatio}x (${(100 - (compressedSize / originalSize * 100)).toFixed(3)}% reduction)`);
+      logger.debug(`Base64 result length: ${base64Result.length} chars`);
+
+      return base64Result;
     } catch (error: any) {
       throw new Error(`Compression failed: ${error.message}`);
     }
@@ -106,7 +128,7 @@ export class MessageManager {
         throw new TypeError("Input must be a string");
       }
       const compressedData = Buffer.from(data, "base64");
-      const decompressedData = Bun.inflateSync(new Uint8Array(compressedData));
+      const decompressedData = Bun.gunzipSync(new Uint8Array(compressedData));
       return new TextDecoder().decode(decompressedData);
     } catch (error: any) {
       throw new Error(`Decompression failed: ${error.message}`);
@@ -262,6 +284,22 @@ export class MessageManager {
         `Content exceeds maximum length limit of ${MAX_CONTENT_LENGTH} bytes`
       );
     }
+  }
+
+  private validateCompressionLevel(level: number): ZlibCompressionOptions["level"] {
+    if (level < -1 || level > 9) {
+      console.warn(`Invalid compression level: ${level}, fallback to 6`);
+      return 6;
+    }
+    return level as ZlibCompressionOptions["level"];
+  }
+
+  private validateMemLevel(level: number): ZlibCompressionOptions["memLevel"] {
+    if (level < 1 || level > 9) {
+      console.warn(`Invalid memory level: ${level}, fallback to 8`);
+      return 8;
+    }
+    return level as ZlibCompressionOptions["memLevel"];
   }
 
   public async getMessageCount(): Promise<number> {

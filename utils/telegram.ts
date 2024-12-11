@@ -3,6 +3,7 @@ import { Api } from "telegram";
 import { client, logger } from "..";
 import { NewMessageEvent } from "telegram/events";
 import type { DeletedMessageEvent } from "telegram/events/DeletedMessage";
+import sharp from "sharp";
 
 import * as SQLite from "./sqlite";
 
@@ -129,14 +130,80 @@ const parseMessageToMarkdown = (message: Api.Message) => {
 };
 
 const parsePhotoFromMessage = async (message: Api.Message) => {
-  if (message.media instanceof Api.MessageMediaPhoto) {
-    if (message.media.photo instanceof Api.Photo) {
-      const result = await client.downloadMedia(message);
-      // @TODO Support media upload
-      return "data:image/jpeg;base64," + (result as Buffer).toString("base64");
-    }
+  if (!(message.media instanceof Api.MessageMediaPhoto) ||
+    !(message.media.photo instanceof Api.Photo)) {
+    return "";
   }
-  return "";
+
+  try {
+    const jpegBuffer = await client.downloadMedia(message, {}) as Buffer;
+    if (!jpegBuffer) return "";
+
+    const imageQuality = parseInt(Bun.env.IMAGE_QUALITY ?? "80");
+    const effortLevel = parseInt(Bun.env.IMAGE_EFFORT_LEVEL ?? "6");
+    const isLossless = Bun.env.IMAGE_LOSSLESS === 'true' || Bun.env.IMAGE_LOSSLESS === '1';
+    let format = (Bun.env.IMAGE_ENCODE_FORMAT ?? "avif").toLowerCase();
+
+    const originalImage = sharp(jpegBuffer);
+    const originalMetadata = await originalImage.metadata();
+    const originalSize = jpegBuffer.length;
+
+    logger.debug(`Original image: ${originalMetadata.width}x${originalMetadata.height}px, ${(originalSize / 1024).toFixed(3)}KB`);
+    logger.debug(`Using Format: ${format} (${imageQuality}%), effortLevel: ${effortLevel}, isLossless: ${isLossless}`);
+
+    const prefix = {
+      "avif": "data:image/avif;base64",
+      "webp": "data:image/webp;base64",
+      "jpeg": "data:image/jpeg;base64"
+    } as const;
+
+    let processedImage = sharp(jpegBuffer);
+    let outputBuffer: Buffer;
+
+    switch (format) {
+      case 'avif':
+        outputBuffer = await processedImage
+          .avif({
+            quality: imageQuality,
+            effort: effortLevel,
+            lossless: isLossless
+          })
+          .toBuffer();
+        break;
+
+      case 'webp':
+        outputBuffer = await processedImage
+          .webp({
+            quality: imageQuality,
+            effort: effortLevel,
+            lossless: isLossless
+          })
+          .toBuffer();
+        break;
+
+      case 'jpeg':
+        outputBuffer = jpegBuffer;
+        break;
+
+      default:
+        console.warn(`Unsupported image format: ${format}, fallback to JPEG`);
+        outputBuffer = jpegBuffer;
+        format = 'jpeg';
+    }
+
+    const processedMetadata = await sharp(outputBuffer).metadata();
+    const processedSize = outputBuffer.length;
+    const compressionRatio = (originalSize / processedSize).toFixed(2);
+
+    logger.debug(`Processed image: ${processedMetadata.width}x${processedMetadata.height}px, ${(processedSize / 1024).toFixed(3)}KB`);
+    logger.debug(`Compression ratio: ${compressionRatio}x (${(100 - (processedSize / originalSize * 100)).toFixed(3)}% reduction)`);
+
+    return `${prefix[format as keyof typeof prefix]},${outputBuffer.toString('base64')}`;
+
+  } catch (error) {
+    console.error('Error processing photo:', error);
+    return "";
+  }
 };
 
 const parseMessage = async (messages: Api.Message[]) => {

@@ -114,6 +114,32 @@ CHANNEL_PAGE_SIZE=10
 HOST=0.0.0.0
 PORT=3000
 
+# 日志等级，默认 debug，生产环境请修改为 info 或 warn
+# 可选 none | error | warn | info | debug
+LOG_LEVEL=debug
+
+# 性能优化
+# 默认使用 Gzip 压缩文本消息，可选 0~9，0 即不压缩仅编码，9 即最大压缩，推荐范围 6~9
+CONTENT_ENCODE_CPU_LEVEL=6
+# 压缩时使用的内存级别，可选 1~9，推荐 8，如果压缩时出现 OOM 内存不足报错时可适当降低。
+CONTENT_ENCODE_MEM_LEVEL=8
+
+# 图片编码格式，当前支持 avif / webp / jpeg (原图格式)
+# 推荐 avif > webp，如果需要兼容老旧浏览器（如 IE）时请选择 jpeg。
+IMAGE_ENCODE_FORMAT=avif
+
+# 【jpeg 原图格式不支持此选项】图片有损压缩比率，可选值：1-100。
+# 值越低图片的肉眼观感越差、占存储空间越小，推荐 60~80，压缩比再高就推荐选择使用 jpeg 原图格式。
+IMAGE_QUALITY=60
+
+# 【jpeg 原图格式不支持此选项】图片编码压缩等级，可选值：0-9，推荐范围：6~8
+# 等级越高压缩效果越好，图片的肉眼观感不变，但编码时消耗的 CPU 性能也越多，如果压缩时出现 OOM 内存不足报错时可适当降低。
+IMAGE_EFFORT_LEVEL=6
+
+# 【jpeg 原图格式不支持此选项】是否启用无损压缩，可选值：true / false，推荐: false
+# 使用 avif / webp 无损压缩时有可能存在比原图还大的情况，如果有无损的需求请使用 jpeg 原图格式。
+IMAGE_LOSSLESS=false
+
 # Session 会话文件保存路径，不推荐修改
 SESSION_FILE=./.session
 
