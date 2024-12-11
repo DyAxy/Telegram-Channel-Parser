@@ -2,7 +2,7 @@
   "name": "telegram-channel-parser",
   "module": "index.ts",
   "license": "GPL-3.0-only",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "type": "module",
   "scripts": {
     "dev": "bun run --watch index.ts",

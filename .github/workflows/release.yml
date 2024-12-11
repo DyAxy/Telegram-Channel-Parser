@@ -109,7 +109,7 @@ jobs:
                         core.setOutput('compare_url', `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/commits`);
                         core.setOutput('changes_text', 'all commits');
                       } else {
-                        const previousRelease = releases.data[0];
+                        const previousRelease = releases.data[1];
                         const previousTag = previousRelease.tag_name;
                         const previousVersion = previousTag.replace('v', '');
                         console.log(`Previous version: ${previousTag}`);
