@@ -1,7 +1,6 @@
 import fs from "fs";
 import readline from "readline";
 
-import { Hono } from "hono";
 import { Api, Logger, TelegramClient } from "telegram";
 import { StringSession } from "telegram/sessions";
 import { NewMessage } from "telegram/events";
@@ -13,9 +12,7 @@ export const logger = new Logger();
 
 import * as SQLite from "./utils/sqlite";
 import * as Telegram from "./utils/telegram";
-import * as Routers from "./utils/routers";
-import { cors } from "hono/cors";
-import { serveStatic } from "hono/bun";
+import initServer from "./utils/server"
 
 export const database = SQLite.initDatabase();
 
@@ -144,24 +141,5 @@ const checkDatabase = async () => {
 };
 await checkDatabase();
 
-// Initialize the HTTP server
-const app = new Hono();
 
-// Initialize the middleware
-app.use(Routers.loggerHandler);
-app.onError(Routers.errorHandler);
-app.get("/*", serveStatic({ root: "./static" }));
-
-// Initialize the routers
-for (const router of Routers.routers) {
-  app.on(router.method, router.path, router.handler);
-}
-
-// Start the HTTP server
-logger.info("Starting the server...");
-Bun.serve({
-  hostname: Bun.env.HOST!,
-  port: Bun.env.PORT!,
-  fetch: app.fetch,
-});
-logger.info(`Server started at ${Bun.env.HOST}:${Bun.env.PORT}`);
+initServer();

@@ -17,8 +17,25 @@ interface DataConfig {
   data: DataConfigMe;
 }
 
+type MiddlewareHandler = (c: Context, next: () => Promise<void>) => Promise<void>;
+
 interface Router {
   method: string | string[];
   path: string[];
+  middleware?: MiddlewareHandler[];
   handler: (c: Context) => HandlerResponse;
+}
+
+type ImageFormat = 'avif' | 'webp' | 'jpeg';
+type ImageProcessConfig = {
+  quality?: number;
+  effort?: number;
+  isLossless?: boolean;
+  format?: ImageFormat;
+};
+interface ProcessStats {
+  originalSize: number;
+  processedSize: number;
+  compressionRatio: number;
+  reductionPercent: number;
 }

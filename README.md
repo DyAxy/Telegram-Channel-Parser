@@ -114,6 +114,11 @@ CHANNEL_PAGE_SIZE=10
 HOST=0.0.0.0
 PORT=3000
 
+# CORS 白名单
+# 使用英文逗号分隔，请填写前端地址的 new URL().origin 的结果（不带 /）。
+# 如果不配置好则默认为 *，不推荐。
+CORS_WHITELIST=https://example.com,http://localhost:3000
+
 # 日志等级，默认 debug，生产环境请修改为 info 或 warn
 # 可选 none | error | warn | info | debug
 LOG_LEVEL=debug
