@@ -5,6 +5,7 @@ interface DataMessages {
   content: string;
   created_at: number;
   updated_at: number;
+  last_updated_at: number;
 }
 interface DataConfigMe {
   title: string;

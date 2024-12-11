@@ -260,6 +260,7 @@ const parseMessage = async (messages: Api.Message[]) => {
   }
   return parsedMessages;
 };
+
 export const getMessages = async (minId: number, maxId: number) => {
   const result = await client.getMessages(Bun.env.CHANNEL_ID!, {
     minId,
@@ -267,6 +268,7 @@ export const getMessages = async (minId: number, maxId: number) => {
   });
   return parseMessage(result);
 };
+
 export const handleNewMessage = async (event: NewMessageEvent) => {
   const message = event.message;
   if (message.chat instanceof Api.Channel) {

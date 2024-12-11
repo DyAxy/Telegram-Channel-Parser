@@ -11,11 +11,14 @@
 ## :sparkles: 主要特性
 
 - :arrows_counterclockwise: 启动后自动同步频道历史消息
-- :satellite: 监听 Telegram 频道动态：
+- :satellite: 实时监听 Telegram 频道动态：
   - :incoming_envelope: 新消息推送
   - :pencil2: 消息编辑时自动更新
   - :wastebasket: 消息删除时自动同步
-- :floppy_disk: 基于 SQLite3 实现的本地高性能、持久化存储
+- :floppy_disk: 基于 SQLite3 实现的本地高性能、持久化存储：
+  - :compass: 使用 Brotli 压缩算法减轻存储压力
+  - :camera: 图片附件使用 AVIF/WebP 高效编码格式
+  - :file_folder: 支持多种消息类型的存储
 - :rocket: 基于 Hono 的 RESTful API：
   - :bar_chart: 便捷的消息查询接口
   - :zap: 高性能数据访问
@@ -124,10 +127,9 @@ CORS_WHITELIST=https://example.com,http://localhost:3000
 LOG_LEVEL=debug
 
 # 性能优化
-# 默认使用 Gzip 压缩文本消息，可选 0~9，0 即不压缩仅编码，9 即最大压缩，推荐范围 6~9
+# 默认使用 Brotli 压缩数据库中的文本消息，可节约硬盘空间，可选值 0~11
+# 0 即不压缩仅编码，11 即最大压缩，推荐范围 6~9
 CONTENT_ENCODE_CPU_LEVEL=6
-# 压缩时使用的内存级别，可选 1~9，推荐 8，如果压缩时出现 OOM 内存不足报错时可适当降低。
-CONTENT_ENCODE_MEM_LEVEL=8
 
 # 图片编码格式，当前支持 avif / webp / jpeg (原图格式)
 # 推荐 avif > webp，如果需要兼容老旧浏览器（如 IE）时请选择 jpeg。
