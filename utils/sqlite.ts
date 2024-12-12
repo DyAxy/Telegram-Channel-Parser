@@ -2,6 +2,8 @@ import fs from "fs";
 import { Database } from "bun:sqlite";
 
 import { logger } from "..";
+import type { ZlibCompressionOptions } from "bun";
+import { brotliCompressSync, brotliDecompressSync, constants } from "node:zlib"; // alias: bun
 
 const MAX_CONTENT_LENGTH = 1000000; // ~1MB
 const MAX_RETRIES = 3;
@@ -92,9 +94,30 @@ export class MessageManager {
       if (typeof data !== "string") {
         throw new TypeError("Input must be a string");
       }
-      const textEncoder = new TextEncoder();
-      const compressedData = Bun.deflateSync(textEncoder.encode(data));
-      return Buffer.from(compressedData).toString("base64");
+
+      const params = {
+        [constants.BROTLI_PARAM_QUALITY]: parseInt(Bun.env.CONTENT_ENCODE_CPU_LEVEL ?? "4"),
+        [constants.BROTLI_PARAM_MODE]: constants.BROTLI_MODE_TEXT,
+        [constants.BROTLI_PARAM_SIZE_HINT]: data.length
+      };
+
+      const originalLength = data.length;
+      const originalSize = Buffer.from(data).length;
+
+      logger.debug(`Original content: ${originalLength} chars, ${(originalSize / 1024).toFixed(3)}KB`);
+      logger.debug(`Brotli Quality: ${params[constants.BROTLI_PARAM_QUALITY]}`);
+
+      const compressedData = brotliCompressSync(data, { params });
+      const compressedSize = compressedData.length;
+      const base64Result = compressedData.toString("base64");
+      const compressionRatio = (originalSize / compressedSize).toFixed(2);
+      const reductionPercent = (100 - (compressedSize / originalSize * 100)).toFixed(3);
+
+      logger.debug(`Compressed size: ${(compressedSize / 1024).toFixed(2)}KB`);
+      logger.debug(`Compression ratio: ${compressionRatio}x (${reductionPercent}% reduction)`);
+      logger.debug(`Base64 result length: ${base64Result.length} chars`);
+
+      return base64Result;
     } catch (error: any) {
       throw new Error(`Compression failed: ${error.message}`);
     }
@@ -106,8 +129,8 @@ export class MessageManager {
         throw new TypeError("Input must be a string");
       }
       const compressedData = Buffer.from(data, "base64");
-      const decompressedData = Bun.inflateSync(new Uint8Array(compressedData));
-      return new TextDecoder().decode(decompressedData);
+      const decompressedData = brotliDecompressSync(new Uint8Array(compressedData));
+      return decompressedData.toString();
     } catch (error: any) {
       throw new Error(`Decompression failed: ${error.message}`);
     }
@@ -146,7 +169,7 @@ export class MessageManager {
       this.validateMessageId(messageId);
 
       const stmt = this.database.prepare(`
-        SELECT rowid as id, message_id, content, created_at, updated_at 
+        SELECT rowid as id, message_id, content, created_at, updated_at, last_updated_at 
         FROM messages 
         WHERE message_id = ? 
         LIMIT 1
@@ -162,6 +185,7 @@ export class MessageManager {
         content: this.decompress(message.content),
         created_at: message.created_at,
         updated_at: message.updated_at,
+        last_updated_at: message.last_updated_at,
       };
     }, `getMessage_${messageId}`);
   }
@@ -169,7 +193,7 @@ export class MessageManager {
   public async getMessages(): Promise<DataMessages[]> {
     return this.retry(async () => {
       const stmt = this.database.prepare(
-        "SELECT rowid as id, message_id, content, created_at, updated_at FROM messages"
+        "SELECT rowid as id, message_id, content, created_at, updated_at, last_updated_at FROM messages"
       );
       const messages = stmt.all() as Array<DataMessages>;
       messages.sort((a, b) => b.message_id - a.message_id);
@@ -179,6 +203,7 @@ export class MessageManager {
         content: this.decompress(message.content),
         created_at: message.created_at,
         updated_at: message.updated_at,
+        last_updated_at: message.last_updated_at,
       }));
     }, "getMessages");
   }
@@ -197,14 +222,16 @@ export class MessageManager {
       }
 
       const compressedContent = this.compress(content);
-      const now = Date.now();
+      const contentObejct = JSON.parse(content);
+      const created_at = new Date(contentObejct.createDate).getTime();
+      const updated_at = new Date(contentObejct.editedDate || contentObejct.createDate).getTime();
 
       this.database.transaction(() => {
         const stmt = this.database.prepare(`
-          INSERT INTO messages (message_id, content, created_at, updated_at) 
-          VALUES (?, ?, ?, ?)
+          INSERT INTO messages (message_id, content, created_at, updated_at, last_updated_at) 
+          VALUES (?, ?, ?, ?, ?)
         `);
-        stmt.run(messageId, compressedContent, now, now);
+        stmt.run(messageId, compressedContent, created_at, updated_at, Math.floor(Date.now() / 1000));
       })();
     }, `insertMessage_${messageId}`);
   }

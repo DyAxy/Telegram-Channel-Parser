@@ -1,7 +1,6 @@
 import fs from "fs";
 import readline from "readline";
 
-import { Hono } from "hono";
 import { Api, Logger, TelegramClient } from "telegram";
 import { StringSession } from "telegram/sessions";
 import { NewMessage } from "telegram/events";
@@ -13,13 +12,19 @@ export const logger = new Logger();
 
 import * as SQLite from "./utils/sqlite";
 import * as Telegram from "./utils/telegram";
-import * as Routers from "./utils/routers";
-import { cors } from "hono/cors";
-import { serveStatic } from "hono/bun";
+import initServer from "./utils/server"
 
 export const database = SQLite.initDatabase();
 
-logger.setLevel(LogLevel.DEBUG);
+const LOG_LEVEL_MAP: Record<string, LogLevel> = {
+  'none': LogLevel.NONE,
+  'error': LogLevel.ERROR,
+  'warn': LogLevel.WARN,
+  'info': LogLevel.INFO,
+  'debug': LogLevel.DEBUG
+};
+
+logger.setLevel(LOG_LEVEL_MAP[Bun.env.LOG_LEVEL ?? 'debug'] ?? LogLevel.DEBUG);
 
 const initTelegram = async () => {
   const sessionPath = Bun.env.SESSION_FILE || "./.session";
@@ -105,7 +110,7 @@ const checkDatabase = async () => {
       savedMessages.length === 0 ? 0 : savedMessages[0].message_id;
     const endId = lastMessage.messages[0].id + 1;
     const itemsPerTimes = 500;
-    
+
     if (startId + 1 < endId) {
       logger.info("Fetching messages...");
       const times = Math.ceil((endId - startId) / itemsPerTimes);
@@ -136,22 +141,5 @@ const checkDatabase = async () => {
 };
 await checkDatabase();
 
-// Initialize the HTTP server
-const app = new Hono();
-// Initialize the middleware
-app.use(Routers.loggerHandler);
-app.onError(Routers.errorHandler);
-app.get("/*", serveStatic({ root: "./static" }));
-// Initialize the routers
-for (const router of Routers.routers) {
-  app.on(router.method, router.path, router.handler);
-}
 
-// Start the HTTP server
-logger.info("Starting the server...");
-Bun.serve({
-  hostname: Bun.env.HOST!,
-  port: Bun.env.PORT!,
-  fetch: app.fetch,
-});
-logger.info(`Server started at ${Bun.env.HOST}:${Bun.env.PORT}`);
+initServer();

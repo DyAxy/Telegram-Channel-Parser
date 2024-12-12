@@ -5,6 +5,7 @@ interface DataMessages {
   content: string;
   created_at: number;
   updated_at: number;
+  last_updated_at: number;
 }
 interface DataConfigMe {
   title: string;
@@ -17,8 +18,25 @@ interface DataConfig {
   data: DataConfigMe;
 }
 
+type MiddlewareHandler = (c: Context, next: () => Promise<void>) => Promise<void>;
+
 interface Router {
   method: string | string[];
   path: string[];
+  middleware?: MiddlewareHandler[];
   handler: (c: Context) => HandlerResponse;
+}
+
+type ImageFormat = 'avif' | 'webp' | 'jpeg';
+type ImageProcessConfig = {
+  quality?: number;
+  effort?: number;
+  isLossless?: boolean;
+  format?: ImageFormat;
+};
+interface ProcessStats {
+  originalSize: number;
+  processedSize: number;
+  compressionRatio: number;
+  reductionPercent: number;
 }

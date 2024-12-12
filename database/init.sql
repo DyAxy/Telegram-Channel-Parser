@@ -7,11 +7,12 @@ CREATE TABLE "messages" (
   "id" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
   -- 消息 id
   "message_id" INTEGER NOT NULL UNIQUE,
-  -- 内容缓存 (已加密)
+  -- 内容缓存 （JSON 明文）
   "content" TEXT NOT NULL,
   -- Unix 时间戳
   "created_at" INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
-  "updated_at" INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
+  "updated_at" INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+  "last_updated_at" INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
 );
 CREATE TABLE "config" (
   -- 数据对应频道
@@ -34,13 +35,4 @@ BEGIN
         WHEN OLD.id != NEW.id THEN
             RAISE(ABORT, 'Cannot modify id field')
     END;
-END;
-
--- 自动更新 updated_at
-CREATE TRIGGER messages_update_timestamp
-AFTER UPDATE ON messages
-BEGIN
-    UPDATE messages 
-    SET updated_at = strftime('%s', 'now')
-    WHERE id = NEW.id;
 END;

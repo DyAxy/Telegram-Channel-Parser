@@ -2,7 +2,7 @@
   "name": "telegram-channel-parser",
   "module": "index.ts",
   "license": "GPL-3.0-only",
-  "version": "0.0.3",
+  "version": "0.0.9",
   "type": "module",
   "scripts": {
     "dev": "bun run --watch index.ts",
@@ -16,9 +16,24 @@
   },
   "dependencies": {
     "hono": "^4.6.13",
+    "sharp": "^0.33.5",
     "telegram": "^2.26.8"
   },
+  "supportedArchitectures": {
+    "os": [
+      "win32",
+      "darwin",
+      "linux"
+    ],
+    "cpu": [
+      "x64",
+      "arm64"
+    ]
+  },
   "trustedDependencies": [
-    "es5-ext"
+    "bufferutil",
+    "es5-ext",
+    "sharp",
+    "utf-8-validate"
   ]
 }

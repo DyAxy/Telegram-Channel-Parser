@@ -11,11 +11,14 @@
 ## :sparkles: 主要特性
 
 - :arrows_counterclockwise: 启动后自动同步频道历史消息
-- :satellite: 监听 Telegram 频道动态：
+- :satellite: 实时监听 Telegram 频道动态：
   - :incoming_envelope: 新消息推送
   - :pencil2: 消息编辑时自动更新
   - :wastebasket: 消息删除时自动同步
-- :floppy_disk: 基于 SQLite3 实现的本地高性能、持久化存储
+- :floppy_disk: 基于 SQLite3 实现的本地高性能、持久化存储：
+  - :compass: 使用 Brotli 压缩算法减轻存储压力
+  - :camera: 图片附件使用 AVIF/WebP 高效编码格式
+  - :file_folder: 支持多种消息类型的存储
 - :rocket: 基于 Hono 的 RESTful API：
   - :bar_chart: 便捷的消息查询接口
   - :zap: 高性能数据访问
@@ -46,18 +49,31 @@
 
 ### 从构建启动
 
-在这里 [https://github.com/DyAxy/Telegram-Channel-Parser/releases](https://github.com/DyAxy/Telegram-Channel-Parser/releases)  
-根据自己的操作系统下载对应压缩包，修改权限和 env 后执行即可
+> [!IMPORTANT]
+> 请注意：由 GitHub CI 自动构建的 x64 二进制包 **不支持没有 AVX2 的古董型号 CPU**，例如 Haswell 系列之前的 CPU。   
+> 自动构建工作流正在使用 Ubuntu Intel x64 环境 + 交叉编译技术，因此如果无法正常运行，请选择 [从源码启动](#从源码启动) 或者提交 PR！
+
+1. 在 [Releases](https://github.com/DyAxy/Telegram-Channel-Parser/releases) 页面根据自己的环境下载对应压缩包
+2. 解压压缩包 (`tar -zxvf telegram-parser*.tar.gz`)
+3. 进入解压后的目录 (`cd telegram-parser*`)
+4. 修改权限 (`chmod +x telegram-parser*`)
+5. 使用 `cp .env.example .env` 后修改 `.env` 的配置内容
+6. 启动程序 (`./telegram-parser*`)
+7. 根据提示输入手机号、Telegram 收到的验证码、二次密码等。
+8. 第一次使用会创建数据库并拉取频道内容，后续每次启动只会拉取最新内容。
+9. 如有开机自启动等需求，请参阅 [持久化服务](#持久化服务)
 
 ```
+项目文件结构
 ├── database/               # 数据库目录
-│   ├── init.sql            # 数据库导入文件
+│   ├── init.sql            # 数据库初始化文件，请不要删除
+|   ├── messages.db         # 存储消息的 SQLite 数据库
 │   └── ...
 ├── static/                 # 前端静态目录
 │   └── ...
 ├── .env                    # 环境变量文件
 ├── .session                # Session 文件（登陆后才会有）
-├── telegramparser          # 程序主文件
+├── telegram-parser_...     # 程序主文件
 └── ...                     # 其他文件
 ```
 
@@ -70,11 +86,13 @@
 4. 使用 `bun run dev` 启动服务端。
 5. 根据提示输入手机号、Telegram收到的验证码、二次密码等。
 6. 第一次使用会创建数据库并拉取频道内容，后续每次启动只会拉取最新内容。
-7. 如果需要持久化服务
+7. 如有开机自启动等需求，请参阅 [持久化服务](#持久化服务)
+
+## 持久化服务
    
-   1. 本项目使用 pm2 进行服务管理，安装依赖 pm2：`bun i -g pm2`
-   2. 先使用 `bun run dev` 启动并成功登录后，关闭服务端
-   3. 确认 Session 登录成功后一键启动: `pm2 start ecosystem.config.js`
+1. 本项目使用 pm2 进行服务管理，安装依赖 pm2：`bun i -g pm2`
+2. 先使用 `bun run dev` 启动并成功登录后，关闭服务端
+3. 确认 Session 登录成功后一键启动: `pm2 start ecosystem.config.js`
 
 ### 修改 .env.example 为 .env
 
@@ -99,6 +117,36 @@ CHANNEL_PAGE_SIZE=10
 HOST=0.0.0.0
 PORT=3000
 
+# CORS 白名单
+# 使用英文逗号分隔，请填写前端地址的 new URL().origin 的结果（不带 /）。
+# 如果不配置好则默认为 *，不推荐。
+CORS_WHITELIST=https://example.com,http://localhost:3000
+
+# 日志等级，默认 debug，生产环境请修改为 info 或 warn
+# 可选 none | error | warn | info | debug
+LOG_LEVEL=debug
+
+# 性能优化
+# 默认使用 Brotli 压缩数据库中的文本消息，可节约硬盘空间，可选值 0~11
+# 0 即不压缩仅编码，11 即最大压缩，推荐范围 6~9
+CONTENT_ENCODE_CPU_LEVEL=6
+
+# 图片编码格式，当前支持 avif / webp / jpeg (原图格式)
+# 推荐 avif > webp，如果需要兼容老旧浏览器（如 IE）时请选择 jpeg。
+IMAGE_ENCODE_FORMAT=avif
+
+# 【jpeg 原图格式不支持此选项】图片有损压缩比率，可选值：1-100。
+# 值越低图片的肉眼观感越差、占存储空间越小，推荐 60~80，压缩比再高就推荐选择使用 jpeg 原图格式。
+IMAGE_QUALITY=60
+
+# 【jpeg 原图格式不支持此选项】图片编码压缩等级，可选值：0-9，推荐范围：6~8
+# 等级越高压缩效果越好，图片的肉眼观感不变，但编码时消耗的 CPU 性能也越多，如果压缩时出现 OOM 内存不足报错时可适当降低。
+IMAGE_EFFORT_LEVEL=6
+
+# 【jpeg 原图格式不支持此选项】是否启用无损压缩，可选值：true / false，推荐: false
+# 使用 avif / webp 无损压缩时有可能存在比原图还大的情况，如果有无损的需求请使用 jpeg 原图格式。
+IMAGE_LOSSLESS=false
+
 # Session 会话文件保存路径，不推荐修改
 SESSION_FILE=./.session
 
@@ -110,10 +158,10 @@ MESSAGE_SQLITE_FILE=./database/messages.db
 
 当前使用：`/api/v1/`
 
-| 名称 | 路径 | 方法 | 参数 | 返回 |
-| ------------ | ------------ | ------------ | ------------ | ------------ |
+| 名称     | 路径      | 方法  | 参数 | 返回                               |
+| -------- | --------- | ----- | ---- | ---------------------------------- |
 | 版本信息 | `version` | `GET` | `无` | `{"name":"","version":"","ts": 0}` |
-| 拉取列表 | `list` | `GET` | `无` | `{"data":[],"total":0}` |
+| 拉取列表 | `list`    | `GET` | `无` | `{"data":[],"total":0}`            |
 
 
 ... 待完善，可参见 ./utils/routers.ts 定义

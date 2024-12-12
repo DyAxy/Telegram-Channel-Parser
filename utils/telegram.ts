@@ -3,23 +3,10 @@ import { Api } from "telegram";
 import { client, logger } from "..";
 import { NewMessageEvent } from "telegram/events";
 import type { DeletedMessageEvent } from "telegram/events/DeletedMessage";
+import sharp from "sharp";
 
 import * as SQLite from "./sqlite";
 
-export const getMe = async () => {
-  const channel = (await client.getEntity(Bun.env.CHANNEL_ID!)) as Api.Channel;
-  const fullChannel = await client.invoke(
-    new Api.channels.GetFullChannel({
-      channel: Bun.env.CHANNEL_ID!,
-    })
-  );
-  const result = await client.downloadProfilePhoto(Bun.env.CHANNEL_ID!);
-  return {
-    title: channel.title,
-    description: fullChannel.fullChat.about,
-    photo: "data:image/jpeg;base64," + (result as Buffer).toString("base64"),
-  };
-};
 export const getLastMessage = async () => {
   try {
     if (!Bun.env.CHANNEL_ID) {
@@ -128,15 +115,130 @@ const parseMessageToMarkdown = (message: Api.Message) => {
   return markdownMessage;
 };
 
-const parsePhotoFromMessage = async (message: Api.Message) => {
-  if (message.media instanceof Api.MessageMediaPhoto) {
-    if (message.media.photo instanceof Api.Photo) {
-      const result = await client.downloadMedia(message);
-      // @TODO Support media upload
-      return "data:image/jpeg;base64," + (result as Buffer).toString("base64");
+const BASE64_PREFIX = {
+  "avif": "data:image/avif;base64",
+  "webp": "data:image/webp;base64",
+  "jpeg": "data:image/jpeg;base64"
+} as const;
+
+const getImageConfig = (): ImageProcessConfig => ({
+  quality: parseInt(Bun.env.IMAGE_QUALITY ?? "80"),
+  effort: parseInt(Bun.env.IMAGE_EFFORT_LEVEL ?? "6"),
+  isLossless: Bun.env.IMAGE_LOSSLESS === 'true' || Bun.env.IMAGE_LOSSLESS === '1',
+  format: (Bun.env.IMAGE_ENCODE_FORMAT ?? "avif").toLowerCase() as ImageFormat
+});
+
+const processImage = async (
+  buffer: Buffer, 
+  config: ImageProcessConfig = getImageConfig()
+): Promise<{ base64: string; metadata: { original: sharp.Metadata; processed: sharp.Metadata; stats: ProcessStats } } | null> => {
+  try {
+    const originalImage = sharp(buffer);
+    const originalMetadata = await originalImage.metadata();
+    const originalSize = buffer.length;
+
+    logger.debug(`Original image: ${originalMetadata.width}x${originalMetadata.height}px, ${(originalSize / 1024).toFixed(3)}KB`);
+    logger.debug(
+      `Using Format: ${config.format} (${config.quality}%), ` + 
+      `effortLevel: ${config.effort}, isLossless: ${config.isLossless}`
+    );
+
+    let processedImage = sharp(buffer);
+    let outputBuffer: Buffer;
+    let format = config.format ?? 'jpeg';
+
+    switch (format) {
+      case 'avif':
+        outputBuffer = await processedImage
+          .avif({
+            quality: config.quality,
+            effort: config.effort,
+            lossless: config.isLossless
+          })
+          .toBuffer();
+        break;
+
+      case 'webp':
+        outputBuffer = await processedImage
+          .webp({
+            quality: config.quality,
+            effort: config.effort,
+            lossless: config.isLossless
+          })
+          .toBuffer();
+        break;
+
+      case 'jpeg':
+      default:
+        if (format !== 'jpeg') {
+          logger.warn(`Unsupported image format: ${format}, fallback to JPEG`);
+          format = 'jpeg';
+        }
+        outputBuffer = buffer;
     }
+
+    const processedMetadata = await sharp(outputBuffer).metadata();
+    const processedSize = outputBuffer.length;
+    const compressionRatio = (originalSize / processedSize).toFixed(2);
+    const reductionPercent = (100 - (processedSize / originalSize * 100)).toFixed(3);
+
+    logger.debug(`Processed image: ${processedMetadata.width}x${processedMetadata.height}px, ${(processedSize / 1024).toFixed(3)}KB`);
+    logger.debug(`Compression ratio: ${compressionRatio}x (${reductionPercent}% reduction)`);
+
+    const base64 = `${BASE64_PREFIX[format]},${outputBuffer.toString('base64')}`;
+    
+    return {
+      base64,
+      metadata: {
+        original: originalMetadata,
+        processed: processedMetadata,
+        stats: {
+          originalSize,
+          processedSize,
+          compressionRatio: Number(compressionRatio),
+          reductionPercent: Number(reductionPercent)
+        }
+      }
+    };
+
+  } catch (error) {
+    logger.error(`Error processing image: ${error}`);
+    return null;
   }
-  return "";
+};
+
+const parsePhotoFromMessage = async (message: Api.Message) => {
+  if (!(message.media instanceof Api.MessageMediaPhoto) ||
+    !(message.media.photo instanceof Api.Photo)) {
+    return "";
+  }
+
+  const jpegBuffer = await client.downloadMedia(message, {}) as Buffer;
+  if (!jpegBuffer) return "";
+
+  const result = await processImage(jpegBuffer);
+  return result?.base64 ?? "";
+};
+
+export const getMe = async () => {
+  const channel = (await client.getEntity(Bun.env.CHANNEL_ID!)) as Api.Channel;
+  const fullChannel = await client.invoke(
+    new Api.channels.GetFullChannel({
+      channel: Bun.env.CHANNEL_ID!,
+    })
+  );
+  const photoBuffer = await client.downloadProfilePhoto(Bun.env.CHANNEL_ID!) as Buffer;
+  
+  const result = await processImage(photoBuffer, {
+    ...getImageConfig(),
+    quality: 80,
+  });
+
+  return {
+    title: channel.title,
+    description: fullChannel.fullChat.about,
+    photo: result?.base64 ?? "",
+  };
 };
 
 const parseMessage = async (messages: Api.Message[]) => {
@@ -158,6 +260,7 @@ const parseMessage = async (messages: Api.Message[]) => {
   }
   return parsedMessages;
 };
+
 export const getMessages = async (minId: number, maxId: number) => {
   const result = await client.getMessages(Bun.env.CHANNEL_ID!, {
     minId,
@@ -165,6 +268,7 @@ export const getMessages = async (minId: number, maxId: number) => {
   });
   return parseMessage(result);
 };
+
 export const handleNewMessage = async (event: NewMessageEvent) => {
   const message = event.message;
   if (message.chat instanceof Api.Channel) {
